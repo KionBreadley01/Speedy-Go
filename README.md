@@ -1,50 +1,214 @@
-# Welcome to your Expo app 👋
+# 🚀 Speedy Go — App Móvil
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Aplicación de entrega de comida a domicilio construida con **React Native + Expo**. Este documento explica cómo configurar el entorno de desarrollo, la estructura del proyecto y cómo colaborar.
 
-## Get started
+---
 
-1. Install dependencies
+## 📋 Requisitos previos
 
-   ```bash
-   npm install
-   ```
+Antes de clonar el repo, asegúrate de tener instalado lo siguiente:
 
-2. Start the app
+| Herramienta | Versión mínima | Descarga |
+|---|---|---|
+| Node.js | 18.x o superior | https://nodejs.org |
+| npm | 9.x o superior | (incluido con Node) |
+| Git | cualquiera | https://git-scm.com |
+| Expo Go (en tu celular) | última | App Store / Play Store |
 
-   ```bash
-   npx expo start
-   ```
+> **Opcional:** Para correr en emulador, instala Android Studio (Android) o Xcode (iOS/macOS).
 
-In the output, you'll find options to open the app in a
+---
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## ⚡ Instalación rápida
 
 ```bash
-npm run reset-project
+# 1. Clonar el repositorio
+git clone <URL_DEL_REPO>
+cd my-appxd
+
+# 2. Instalar dependencias
+npm install
+
+# 3. Iniciar el servidor de desarrollo
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Escanea el código QR con la app **Expo Go** en tu celular y ya puedes ver la app en vivo.
 
-## Learn more
+---
 
-To learn more about developing your project with Expo, look at the following resources:
+## 📱 Correr en emulador
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+# Android (necesita Android Studio con un AVD configurado)
+npx expo run:android
 
-## Join the community
+# iOS (solo macOS, necesita Xcode)
+npx expo run:ios
+```
 
-Join our community of developers creating universal apps.
+---
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## 🔧 Comandos útiles
+
+```bash
+# Iniciar con caché limpia (útil si hay errores raros)
+npx expo start --clear
+
+# Verificar errores de TypeScript
+npx tsc --noEmit
+
+# Ver la estructura de archivos del proyecto
+npx expo install   # instala dependencias nativas faltantes
+```
+
+---
+
+## 🗂️ Estructura del proyecto
+
+```
+my-appxd/
+│
+├── app/                          # 📍 Todas las pantallas (expo-router)
+│   ├── _layout.tsx               # Layout raíz — configura el Stack navigator
+│   ├── index.tsx                 # Pantalla de bienvenida (Welcome Screen)
+│   │
+│   ├── (auth)/                   # 🔐 Pantallas de autenticación
+│   │   ├── login.tsx             # Iniciar sesión
+│   │   ├── register.tsx          # Crear cuenta
+│   │   └── terms.tsx             # Términos y condiciones
+│   │
+│   ├── (onboarding)/             # 🗺️ Flujo de inicio
+│   │   └── location-permission.tsx  # Permiso de ubicación
+│   │
+│   ├── (tabs)/                   # 🏠 Navegación principal (Bottom Tabs)
+│   │   ├── _layout.tsx           # Configura las 4 pestañas
+│   │   ├── home.tsx              # Inicio — restaurantes y categorías
+│   │   ├── search.tsx            # Buscar restaurantes
+│   │   ├── orders.tsx            # Mis pedidos
+│   │   └── profile.tsx           # Perfil de usuario
+│   │
+│   ├── (order)/                  # 🛒 Flujo de pedido
+│   │   ├── restaurant/
+│   │   │   └── [id].tsx          # Menú de un restaurante (ruta dinámica)
+│   │   ├── product/
+│   │   │   └── [id].tsx          # Detalle de un producto (ruta dinámica)
+│   │   ├── cart.tsx              # Carrito de compras
+│   │   ├── tracking/
+│   │   │   └── index.tsx         # Seguimiento del pedido en tiempo real
+│   │   └── review.tsx            # Calificar el pedido
+│   │
+│   └── (user)/                   # 👤 Secciones de cuenta
+│       ├── addresses/
+│       │   ├── index.tsx         # Mis direcciones guardadas
+│       │   └── add.tsx           # Agregar nueva dirección
+│       └── incident.tsx          # Reportar un problema
+│
+├── assets/
+│   └── images/                   # Logos e íconos de la app
+│       ├── logo.png              # Logo principal
+│       ├── icon.png              # Ícono de la app (iOS/Android)
+│       ├── splash-icon.png       # Pantalla de splash
+│       └── favicon.png           # Favicon web
+│
+├── constants/
+│   ├── colors.ts                 # 🎨 Paleta de colores del tema
+│   └── theme.ts                  # Tokens de diseño adicionales
+│
+├── components/                   # Componentes reutilizables
+├── app.json                      # Configuración de Expo (nombre, iconos, splash)
+├── tsconfig.json                 # Configuración de TypeScript
+└── package.json                  # Dependencias del proyecto
+```
+
+---
+
+## 🧭 Cómo funciona la navegación
+
+Este proyecto usa **expo-router**, que genera rutas automáticamente a partir de la estructura de carpetas.
+
+| Carpeta | ¿Afecta la URL? | Propósito |
+|---|---|---|
+| `(auth)/` | ❌ No | Agrupa pantallas de autenticación |
+| `(onboarding)/` | ❌ No | Agrupa el flujo de inicio |
+| `(tabs)/` | ❌ No | Navegación por pestañas inferior |
+| `(order)/` | ❌ No | Agrupa el flujo de pedido |
+| `(user)/` | ❌ No | Agrupa secciones de cuenta |
+| `restaurant/[id].tsx` | ✅ Sí → `/restaurant/123` | Ruta dinámica con parámetro `id` |
+| `product/[id].tsx` | ✅ Sí → `/product/456` | Ruta dinámica con parámetro `id` |
+
+---
+
+## 🎨 Sistema de colores
+
+Todos los colores están centralizados en `constants/colors.ts`. **No uses colores hardcodeados** en los componentes, siempre importa desde ahí:
+
+```typescript
+import { Colors } from '@/constants/colors';
+
+// ✅ Correcto
+backgroundColor: Colors.primary
+
+// ❌ Incorrecto
+backgroundColor: '#ec6d13'
+```
+
+---
+
+## 🛠️ Stack tecnológico
+
+| Tecnología | Uso |
+|---|---|
+| **React Native** | Framework base para la UI nativa |
+| **Expo SDK 52** | Herramientas y APIs del dispositivo |
+| **expo-router** | Navegación basada en archivos (similar a Next.js) |
+| **expo-linear-gradient** | Gradientes en pantallas |
+| **TypeScript** | Tipado estático |
+| **react-native-safe-area-context** | Manejo de notch y bordes del dispositivo |
+
+---
+
+## 🔀 Flujo de la aplicación
+
+```
+Welcome Screen
+    ├── Registrarse → Register → Location Permission → Home (tabs)
+    └── Iniciar sesión → Login → Home (tabs)
+                                    │
+                        ┌───────────┼───────────┐
+                      Home        Search     Orders     Profile
+                        │                      │
+                    Restaurant              Tracking
+                        │                      │
+                      Product               Review
+                        │
+                       Cart → Tracking → Review
+```
+
+---
+
+## 🤝 Convenciones del equipo
+
+1. **Una pantalla = un archivo** en la carpeta `app/` correspondiente
+2. **Estilos siempre con `StyleSheet.create()`** al final de cada archivo, no inline
+3. **Colores desde `Colors`**, nunca hardcodeados
+4. **Rutas con `router.push('/ruta')`**, nunca manipules el historial directamente
+5. **TypeScript estricto** — corre `npx tsc --noEmit` antes de hacer commit
+
+---
+
+## 🐛 Solución de problemas comunes
+
+### Metro no encuentra un módulo tras mover archivos
+```bash
+npx expo start --clear
+```
+
+### Error "Cannot find module '@/constants/colors'"
+Verifica que `tsconfig.json` tenga el path alias `@/*` apuntando a `./`:
+```json
+"paths": { "@/*": ["./*"] }
+```
+
+### La app no refleja cambios
+Sacude el dispositivo en Expo Go y selecciona **"Reload"**, o presiona `r` en la terminal.
