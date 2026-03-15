@@ -11,9 +11,54 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { auth } from "../../Lib/firebase";
+
 export default function RegisterScreen() {
     const router = useRouter();
     const [showPassword, setShowPassword] = useState(false);
+    
+    // Auth States
+    const [name, setName] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [loading, setLoading] = useState(false);
+
+    const handleRegister = async () => {
+        if (!name || !email || !password) {
+            alert("Por favor llena todos los campos");
+            return;
+        }
+
+        if (password.length < 8) {
+            alert("La contraseña debe tener al menos 8 caracteres");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const userCredential = await createUserWithEmailAndPassword(
+                auth,
+                email,
+                password
+            );
+
+            // Set user name
+            await updateProfile(userCredential.user, {
+                displayName: name
+            });
+
+            console.log("Usuario registrado:", userCredential.user.email);
+            
+            // Navigate to next screen
+            router.push('/location-permission');
+        } catch (error: any) {
+            console.log(error);
+            alert("No se pudo registrar la cuenta. " + (error.message || ""));
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <SafeAreaView style={styles.container}>
@@ -58,6 +103,8 @@ export default function RegisterScreen() {
                                 placeholder="Ej. Juan Pérez"
                                 placeholderTextColor={Colors.gray400}
                                 autoCapitalize="words"
+                                value={name}
+                                onChangeText={setName}
                             />
                         </View>
                     </View>
@@ -73,6 +120,8 @@ export default function RegisterScreen() {
                                 placeholderTextColor={Colors.gray400}
                                 keyboardType="email-address"
                                 autoCapitalize="none"
+                                value={email}
+                                onChangeText={setEmail}
                             />
                         </View>
                     </View>
@@ -87,6 +136,8 @@ export default function RegisterScreen() {
                                 placeholder="Mínimo 8 caracteres"
                                 placeholderTextColor={Colors.gray400}
                                 secureTextEntry={!showPassword}
+                                value={password}
+                                onChangeText={setPassword}
                             />
                             <TouchableOpacity
                                 onPress={() => setShowPassword(!showPassword)}
@@ -103,10 +154,13 @@ export default function RegisterScreen() {
                     {/* Submit */}
                     <TouchableOpacity
                         style={styles.submitBtn}
-                        onPress={() => router.push('/location-permission')}
+                        onPress={handleRegister}
                         activeOpacity={0.85}
+                        disabled={loading}
                     >
-                        <Text style={styles.submitBtnText}>Crear cuenta</Text>
+                        <Text style={styles.submitBtnText}>
+                            {loading ? "Registrando..." : "Crear cuenta"}
+                        </Text>
                         <Text style={styles.arrow}>→</Text>
                     </TouchableOpacity>
 

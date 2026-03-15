@@ -24,6 +24,7 @@ export default function LoginScreen() {
     const [showPassword, setShowPassword] = useState(false);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [loading, setLoading] = useState(false);
 
     const handleLogin = async () => {
 
@@ -31,6 +32,8 @@ export default function LoginScreen() {
             alert("Por favor llena todos los campos");
             return;
         }
+
+        setLoading(true);
 
         try {
 
@@ -49,8 +52,10 @@ export default function LoginScreen() {
         } catch (error) {
 
             console.log(error);
-            alert("No se pudo iniciar sesión");
+            alert("No se pudo iniciar sesión. Verifica tus credenciales.");
 
+        } finally {
+            setLoading(false);
         }
 
     };
@@ -159,9 +164,10 @@ export default function LoginScreen() {
                             style={styles.submitBtn}
                             onPress={handleLogin}
                             activeOpacity={0.85}
+                            disabled={loading}
                         >
                             <Text style={styles.submitBtnText}>
-                                Iniciar sesión
+                                {loading ? "Iniciando..." : "Iniciar sesión"}
                             </Text>
 
                             <Text style={styles.submitArrow}>→</Text>
