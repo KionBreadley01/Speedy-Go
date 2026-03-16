@@ -17,7 +17,7 @@ import { auth } from "../../Lib/firebase";
 export default function RegisterScreen() {
     const router = useRouter();
     const [showPassword, setShowPassword] = useState(false);
-    
+
     // Auth States
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
@@ -39,7 +39,7 @@ export default function RegisterScreen() {
         try {
             const userCredential = await createUserWithEmailAndPassword(
                 auth,
-                email,
+                email.trim(),
                 password
             );
 
@@ -49,7 +49,7 @@ export default function RegisterScreen() {
             });
 
             console.log("Usuario registrado:", userCredential.user.email);
-            
+
             // Navigate to next screen
             router.push('/location-permission');
         } catch (error: any) {
@@ -182,7 +182,7 @@ export default function RegisterScreen() {
                         ¿Ya tienes una cuenta?{' '}
                         <Text
                             style={styles.loginLink}
-                            onPress={() => router.replace('/(tabs)/home')}
+                            onPress={() => router.replace('/(auth)/login')}
                         >
                             Iniciar sesión
                         </Text>
