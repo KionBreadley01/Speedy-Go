@@ -68,16 +68,8 @@ export default function LoginScreen() {
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             >
 
-                {/* Header */}
-                <View style={styles.header}>
-                    <TouchableOpacity
-                        style={styles.backBtn}
-                        onPress={() => router.back()}
-                        activeOpacity={0.7}
-                    >
-                        <Text style={styles.backIcon}>←</Text>
-                    </TouchableOpacity>
-                </View>
+                {/* Header Space */}
+                <View style={styles.header} />
 
                 <ScrollView
                     contentContainerStyle={styles.scrollContent}

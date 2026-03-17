@@ -64,15 +64,9 @@ export default function RegisterScreen() {
         <SafeAreaView style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity
-                    style={styles.backBtn}
-                    onPress={() => router.back()}
-                    activeOpacity={0.7}
-                >
-                    <Text style={styles.backIcon}>←</Text>
-                </TouchableOpacity>
+                <View style={{ width: 10 }} />
                 <Text style={styles.headerTitle}>Crear cuenta</Text>
-                <View style={{ width: 40 }} />
+                <View style={{ width: 10 }} />
             </View>
 
             <ScrollView

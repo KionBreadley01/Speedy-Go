@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { restaurantService, Restaurant } from '../../Lib/services/restaurantService';
 import { useCartStore } from '../../store/cartStore';
+import { useAddressStore } from '../../store/addressStore';
 
 const CATEGORIES = [
     { label: 'Pizza',    image: require('../../assets/categories/pizza.png') },
@@ -31,6 +32,25 @@ export default function HomePage() {
 
     const cartTotalItems = useCartStore((state) => state.getTotalItems());
     const cartTotalPrice = useCartStore((state) => state.getTotalPrice());
+    
+    const { getCurrentAddressName, setAddresses } = useAddressStore();
+
+    useEffect(() => {
+        const fetchAddresses = async () => {
+             const { auth } = await import('../../Lib/firebase');
+             const { userService } = await import('../../Lib/services/userService');
+             const user = auth.currentUser;
+             if (user) {
+                  try {
+                       const data = await userService.getAddresses(user.uid);
+                       setAddresses(data);
+                  } catch (e) {
+                       console.error(e);
+                  }
+             }
+        };
+        fetchAddresses();
+    }, []);
 
     useEffect(() => {
         const fetchRestaurants = async () => {
@@ -60,7 +80,7 @@ export default function HomePage() {
                     <View style={styles.locationNameRow}>
                         <Text style={styles.pinEmoji}>📍</Text>
                         <Text style={styles.locationName} numberOfLines={1}>
-                            123 Main St, Apt 4B
+                            {getCurrentAddressName()}
                         </Text>
                         <Text style={styles.chevron}>⌄</Text>
                     </View>
