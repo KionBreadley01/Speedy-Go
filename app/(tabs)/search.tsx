@@ -10,6 +10,7 @@ import {
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
 
 export default function SearchScreen() {
     const router = useRouter();
@@ -23,13 +24,13 @@ export default function SearchScreen() {
                     onPress={() => router.back()}
                     activeOpacity={0.7}
                 >
-                    <Text style={styles.backIcon}>←</Text>
+                    <Feather name="chevron-left" size={26} color={Colors.slate900} />
                 </TouchableOpacity>
                 <View style={styles.searchBar}>
-                    <Text style={styles.searchIcon}>🔍</Text>
+                    <Feather name="search" size={18} color={Colors.slate500} style={styles.searchIcon} />
                     <TextInput
                         style={styles.searchInput}
-                        defaultValue="Burgers"
+                        defaultValue=""
                         placeholderTextColor={Colors.gray400}
                         autoFocus
                     />
