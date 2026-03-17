@@ -1,6 +1,8 @@
 import { Colors } from '@/constants/colors';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useState, useEffect } from 'react';
 import {
+    ActivityIndicator,
     Image,
     ScrollView,
     StyleSheet,
@@ -9,9 +11,69 @@ import {
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
+import { restaurantService, Restaurant } from '../../../Lib/services/restaurantService';
+import { useCartStore, Product } from '../../../store/cartStore';
 
 export default function RestaurantMenu() {
     const router = useRouter();
+    const { id } = useLocalSearchParams<{ id: string }>();
+
+    const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
+    const [products, setProducts] = useState<Product[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const cartItems = useCartStore((state) => state.items);
+    const cartTotalPrice = useCartStore((state) => state.getTotalPrice());
+    const cartTotalItems = useCartStore((state) => state.getTotalItems());
+    const addItemToCart = useCartStore((state) => state.addItem);
+
+    useEffect(() => {
+        const loadData = async () => {
+            if (!id) return;
+            try {
+                const [resData, prodData] = await Promise.all([
+                    restaurantService.getRestaurantById(id),
+                    restaurantService.getProductsByRestaurant(id)
+                ]);
+                setRestaurant(resData);
+                setProducts(prodData);
+            } catch (error) {
+                console.error("Error loading restaurant details:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadData();
+    }, [id]);
+
+    const handleAddToCart = (product: Product) => {
+        addItemToCart(product, 1);
+    };
+
+    if (loading) {
+        return (
+            <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+                <ActivityIndicator size="large" color={Colors.primary} />
+            </View>
+        );
+    }
+
+    if (!restaurant) {
+        return (
+            <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]} edges={['top']}>
+                <TouchableOpacity
+                    style={[styles.backBtn, { position: 'absolute', top: 16, left: 16 }]}
+                    onPress={() => router.back()}
+                    activeOpacity={0.7}
+                >
+                    <Feather name="chevron-left" size={26} color={Colors.slate900} />
+                </TouchableOpacity>
+                <Text style={{ fontSize: 16, color: Colors.slate500, fontWeight: '500' }}>Restaurante no encontrado</Text>
+            </SafeAreaView>
+        );
+    }
 
     return (
         <View style={styles.container}>
@@ -23,34 +85,32 @@ export default function RestaurantMenu() {
                         onPress={() => router.back()}
                         activeOpacity={0.7}
                     >
-                        <Text style={styles.backIcon}>←</Text>
+                        <Feather name="chevron-left" size={26} color={Colors.slate900} />
                     </TouchableOpacity>
                     <View style={styles.headerActions}>
                         <TouchableOpacity style={styles.iconBtn}>
-                            <Text style={styles.iconBtnText}>🔍</Text>
+                            <Feather name="search" size={20} color={Colors.slate900} />
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.iconBtn}>
-                            <Text style={styles.iconBtnText}>⋯</Text>
+                            <Feather name="more-horizontal" size={20} color={Colors.slate900} />
                         </TouchableOpacity>
                     </View>
                 </View>
 
                 <View style={styles.restaurantInfo}>
                     <View style={styles.restaurantLeft}>
-                        <Text style={styles.restaurantName}>Burger King</Text>
+                        <Text style={styles.restaurantName}>{restaurant.name}</Text>
                         <View style={styles.metaRow}>
-                            <Text style={styles.star}>⭐</Text>
-                            <Text style={styles.metaValue}>4.8</Text>
+                            <Feather name="star" size={14} color="#FBBF24" fill="#FBBF24" />
+                            <Text style={styles.metaValue}>{restaurant.rating}</Text>
                             <Text style={styles.metaSep}>•</Text>
-                            <Text style={styles.metaText}>15-25 min</Text>
+                            <Text style={styles.metaText}>{restaurant.deliveryTime}</Text>
                             <Text style={styles.metaSep}>•</Text>
-                            <Text style={styles.freeDelivery}>Free Delivery</Text>
+                            <Text style={styles.freeDelivery}>{restaurant.deliveryFee === 0 ? 'Free Delivery' : `$${restaurant.deliveryFee}`}</Text>
                         </View>
                     </View>
                     <Image
-                        source={{
-                            uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD2_ipDmNGAsZ-Z_yF5FwIMmOCYVoGhPYePJ0rU9sozPCBDPsVCeIheQ2BoFWnAXYd7qhvtAUBLXHJf-z9z5xlD8mUjiq4HGkExuIwFZzDJJAXhlXomQziRUF8yPaP2TFcCcbob17re9r1tHu9bQLkztDb2pbqMh8CSyDGV8rn9euY-j9s25ODFnwEEbhQQzcpcNWocXQH5ukjT7_IPtOghTcodxfs2sUs4XKMt3PDAKJYkXwSgmJMpnR_Y1asy2Y9fi2kJhDTjcLYq',
-                        }}
+                        source={{ uri: restaurant.image }}
                         style={styles.restaurantLogo}
                     />
                 </View>
@@ -84,66 +144,51 @@ export default function RestaurantMenu() {
             >
                 <Text style={styles.sectionTitle}>Platos Fuertes</Text>
 
-                {[
-                    {
-                        name: 'Whopper Doble con Queso',
-                        desc: 'Dos carnes de res a la parrilla, queso americano, lechuga y tomate fresco.',
-                        price: '$145.00',
-                        tag: 'Popular',
-                        img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB3gONcJkHATsMmpKqsfnSaksvm3JxCtprL6dlymu2rDya37uVW_sco3yFyWzrlaZ8muhEcq4LvSX9qlcZeTQDzQGGSj7atPNSsArvwpG0kpkPneN6AjF-TvQdB0RiuPDnG8r3Lp4BK8gsnG3E2zLtcheE2g-GFauW3s5f9OdOWHLV4hHww-422EZk5DeVaJZ4vsPUQZqtBRXa6A-etTxXy2VGPUzEVLFfEFYTx6t05Zr56vvVN7ottHCyf1xjhfXCZqQGfJaOfyGo_',
-                    },
-                    {
-                        name: 'Chicken Crispy Sandwich',
-                        desc: 'Pollo crujiente, mayonesa de chipotle y lechuga fresca en pan tostado.',
-                        price: '$98.00',
-                        tag: 'Nuevo',
-                        img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCIhomPRZzyN13C9Nr297Lbuxd42ChLmhF_hWFLVC5Gh_j94JkWjLKRh7wCLFW2-2XaZeKfzBk0HdMN98GfJH8q99wjQV9-II5euaFjXSkPtDZTKVW0drdFYdeeOE21Z-44Frsf_yTYUvBY3hGdz8bRrH29ITx5mEch_eXuQnWE6871mwDBE6PO0FR_w8bHnp9-7TqcAslumIlA_5cmkr2s5vojnqaL1kNG5GgHFViLFPNPTiwmA0aayZi4FcMdyBEkgD6sErFSPf4T',
-                    },
-                ].map((item, i) => (
-                    <View key={i}>
+                {products.map((item, i) => (
+                    <View key={item.id}>
                         <TouchableOpacity
                             style={styles.menuItem}
-                            onPress={() => router.push('/product/1' as any)}
+                            onPress={() => router.push(`/product/${item.id}` as any)}
                             activeOpacity={0.8}
                         >
                             <View style={styles.menuItemInfo}>
-                                <View style={styles.tagRow}>
-                                    <View style={styles.tag}>
-                                        <Text style={styles.tagText}>{item.tag}</Text>
-                                    </View>
-                                </View>
                                 <Text style={styles.itemName}>{item.name}</Text>
                                 <Text style={styles.itemDesc} numberOfLines={2}>
-                                    {item.desc}
+                                    {item.description}
                                 </Text>
                                 <View style={styles.itemBottom}>
-                                    <Text style={styles.itemPrice}>{item.price}</Text>
-                                    <TouchableOpacity style={styles.addBtn} activeOpacity={0.8}>
+                                    <Text style={styles.itemPrice}>${item.price.toFixed(2)}</Text>
+                                    <TouchableOpacity 
+                                        style={styles.addBtn} 
+                                        activeOpacity={0.8}
+                                        onPress={() => handleAddToCart(item)}
+                                    >
                                         <Text style={styles.addBtnText}>+</Text>
                                     </TouchableOpacity>
                                 </View>
                             </View>
-                            <Image source={{ uri: item.img }} style={styles.itemImage} />
+                            {item.image && <Image source={{ uri: item.image }} style={styles.itemImage} />}
                         </TouchableOpacity>
                         <View style={styles.divider} />
                     </View>
                 ))}
             </ScrollView>
 
-            {/* Cart FAB */}
-            <View style={styles.cartBarWrap}>
-                <TouchableOpacity
-                    style={styles.cartBar}
-                    onPress={() => router.push('/cart')}
-                    activeOpacity={0.9}
-                >
-                    <View style={styles.cartCount}>
-                        <Text style={styles.cartCountText}>3 items</Text>
-                    </View>
-                    <Text style={styles.cartLabel}>Ver Carrito</Text>
-                    <Text style={styles.cartTotal}>$375.00</Text>
-                </TouchableOpacity>
-            </View>
+            {cartTotalItems > 0 && (
+                <View style={styles.cartBarWrap}>
+                    <TouchableOpacity
+                        style={styles.cartBar}
+                        onPress={() => router.push('/cart')}
+                        activeOpacity={0.9}
+                    >
+                        <View style={styles.cartCount}>
+                            <Text style={styles.cartCountText}>{cartTotalItems} items</Text>
+                        </View>
+                        <Text style={styles.cartLabel}>Ver Carrito</Text>
+                        <Text style={styles.cartTotal}>${cartTotalPrice.toFixed(2)}</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
         </View>
     );
 }

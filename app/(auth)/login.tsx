@@ -39,7 +39,7 @@ export default function LoginScreen() {
 
             const userCredential = await signInWithEmailAndPassword(
                 auth,
-                email,
+                email.trim(),
                 password
             );
 
@@ -150,6 +150,7 @@ export default function LoginScreen() {
                             <TouchableOpacity
                                 style={styles.forgotWrap}
                                 activeOpacity={0.7}
+                                onPress={() => router.push('/forgot-password')}
                             >
                                 <Text style={styles.forgotText}>
                                     ¿Olvidaste tu contraseña?

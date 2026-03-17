@@ -1,7 +1,8 @@
 import { Colors } from '@/constants/colors';
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useState, useEffect } from 'react';
 import {
+    ActivityIndicator,
     Image,
     ScrollView,
     StyleSheet,
@@ -9,10 +10,64 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { useCartStore, Product } from '../../../store/cartStore';
+import { useFavoriteStore } from '../../../store/favoriteStore';
+import { restaurantService } from '../../../Lib/services/restaurantService';
+import { Feather, Ionicons } from '@expo/vector-icons';
 
 export default function ProductDetails() {
     const router = useRouter();
+    const { id } = useLocalSearchParams<{ id: string }>();
     const [qty, setQty] = useState(1);
+    
+    const toggleFavorite = useFavoriteStore((state) => state.toggleFavorite);
+    const isFavoriteLocal = useFavoriteStore((state) => state.isFavorite(id || ''));
+    
+    const [product, setProduct] = useState<Product | null>(null);
+    const [loading, setLoading] = useState(true);
+    
+    const addItemToCart = useCartStore((state) => state.addItem);
+
+    useEffect(() => {
+        const loadProduct = async () => {
+            if (!id) return;
+            try {
+                const data = await restaurantService.getProductById(id);
+                setProduct(data);
+            } catch (error) {
+                console.error("Error loading product:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadProduct();
+    }, [id]);
+
+    const handleAddToCart = () => {
+        if (!product) return;
+        addItemToCart(product, qty);
+        router.push('/cart');
+    };
+
+    if (loading) {
+        return (
+            <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+                <ActivityIndicator size="large" color={Colors.primary} />
+            </View>
+        );
+    }
+
+    if (!product) {
+        return (
+            <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+                <Text style={{ color: Colors.slate500 }}>Producto no encontrado</Text>
+                <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 16 }}>
+                    <Text style={{ color: Colors.primary, fontWeight: 'bold' }}>Volver</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
 
     return (
         <View style={styles.container}>
@@ -20,7 +75,7 @@ export default function ProductDetails() {
             <View style={styles.heroWrap}>
                 <Image
                     source={{
-                        uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDUKmyhD91id4_mXm1jlYvdpyVjv6XfA22aDWvFmC-J7CALDc8sFyVpOiCSYcPLsJ9jtX8_uUEDTtTzvDPZVT1nZp0aq2VOi2u182aShokqENFHeroF9_RMCmAvmP5gWvKqIYfzn71606kesRgm8XMVcwRCmXW71ukuN_7s6oOjj41xxgfewQOTP9VpGXH5xdKKfY_458sJeTUbl3uhN7wJphwpwbaJUTCwkR7WEpe4H5ppKxRMep-9UO7xfLHaGn6sEe7WGN3FIOnt',
+                        uri: product.image || 'https://lh3.googleusercontent.com/aida-public/AB6AXuDUKmyhD91id4_mXm1jlYvdpyVjv6XfA22aDWvFmC-J7CALDc8sFyVpOiCSYcPLsJ9jtX8_uUEDTtTzvDPZVT1nZp0aq2VOi2u182aShokqENFHeroF9_RMCmAvmP5gWvKqIYfzn71606kesRgm8XMVcwRCmXW71ukuN_7s6oOjj41xxgfewQOTP9VpGXH5xdKKfY_458sJeTUbl3uhN7wJphwpwbaJUTCwkR7WEpe4H5ppKxRMep-9UO7xfLHaGn6sEe7WGN3FIOnt',
                     }}
                     style={styles.heroImg}
                 />
@@ -31,10 +86,20 @@ export default function ProductDetails() {
                         onPress={() => router.back()}
                         activeOpacity={0.8}
                     >
-                        <Text style={styles.heroBtnText}>←</Text>
+                        <Feather name="chevron-left" size={26} color={Colors.white} />
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.heroBtn} activeOpacity={0.8}>
-                        <Text style={styles.heroBtnText}>♡</Text>
+                    <TouchableOpacity 
+                        style={styles.heroBtn} 
+                        activeOpacity={0.8}
+                        onPress={() => {
+                            if (product) toggleFavorite(product);
+                        }}
+                    >
+                        <Ionicons 
+                            name={isFavoriteLocal ? "heart" : "heart-outline"} 
+                            size={22} 
+                            color={isFavoriteLocal ? Colors.primary : Colors.white} 
+                        />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -44,10 +109,9 @@ export default function ProductDetails() {
                 <View style={styles.dragHandle} />
                 <ScrollView showsVerticalScrollIndicator={false}>
                     <View style={styles.titleRow}>
-                        <Text style={styles.title}>Hamburguesa Doble Queso</Text>
+                        <Text style={styles.title}>{product.name}</Text>
                         <View>
-                            <Text style={styles.price}>$12.50</Text>
-                            <Text style={styles.priceOld}>$14.00</Text>
+                            <Text style={styles.price}>${product.price ? product.price.toFixed(2) : '0.00'}</Text>
                         </View>
                     </View>
 
@@ -70,9 +134,7 @@ export default function ProductDetails() {
                     <View style={styles.descSection}>
                         <Text style={styles.descTitle}>Descripción</Text>
                         <Text style={styles.desc}>
-                            Carne de res premium, doble queso cheddar derretido, lechuga
-                            fresca, tomate y nuestra salsa secreta Speedy. Servida en pan
-                            brioche artesanal recién horneado.
+                            {product.description}
                         </Text>
                     </View>
                 </ScrollView>
@@ -102,11 +164,11 @@ export default function ProductDetails() {
                 {/* Add to cart */}
                 <TouchableOpacity
                     style={styles.addBtn}
-                    onPress={() => router.push('/cart')}
+                    onPress={handleAddToCart}
                     activeOpacity={0.85}
                 >
                     <Text style={styles.addBtnLeft}>Agregar</Text>
-                    <Text style={styles.addBtnRight}>${(12.5 * qty).toFixed(2)}</Text>
+                    <Text style={styles.addBtnRight}>${((product.price || 0) * qty).toFixed(2)}</Text>
                 </TouchableOpacity>
             </View>
         </View>
