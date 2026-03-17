@@ -19,7 +19,7 @@ const MI_CUENTA_ITEMS = [
     { icon: 'settings', label: 'Configuración', route: '/settings' },
     { icon: 'headphones', label: 'Ayuda', route: '/incident' },
     { icon: 'heart', label: 'Mis favoritos', route: '/favorites' },
-    { icon: 'map-pin', label: 'Mi dirección', route: null },
+    { icon: 'map-pin', label: 'Mi dirección', route: '/addresses' },
 ];
 
 const OTROS_ITEMS = [

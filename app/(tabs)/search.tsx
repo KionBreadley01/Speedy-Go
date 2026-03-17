@@ -1,5 +1,6 @@
 import { Colors } from '@/constants/colors';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import {
     Image,
     ScrollView,
@@ -12,12 +13,22 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 
+const CATEGORIES = [
+    { label: 'Pizza', image: require('../../assets/categories/pizza.png') },
+    { label: 'Hamburguesas', image: require('../../assets/categories/burger.png') },
+    { label: 'Tacos', image: require('../../assets/categories/tacos.png') },
+    { label: 'Sushi', image: require('../../assets/categories/sushi.png') },
+    { label: 'Saludable', image: require('../../assets/categories/healthy.png') },
+    { label: 'Súper', image: require('../../assets/categories/super.png') },
+];
+
 export default function SearchScreen() {
     const router = useRouter();
+    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
-            {/* Search Header */}
+            {/* Header with title */}
             <View style={styles.header}>
                 <TouchableOpacity
                     style={styles.backBtn}
@@ -26,15 +37,12 @@ export default function SearchScreen() {
                 >
                     <Feather name="chevron-left" size={26} color={Colors.slate900} />
                 </TouchableOpacity>
-                <View style={styles.searchBar}>
-                    <Feather name="search" size={18} color={Colors.slate500} style={styles.searchIcon} />
-                    <TextInput
-                        style={styles.searchInput}
-                        defaultValue=""
-                        placeholderTextColor={Colors.gray400}
-                        autoFocus
-                    />
-                </View>
+                <Text style={styles.headerTitle} numberOfLines={1}>
+                    {selectedCategory ?? 'Buscar'}
+                </Text>
+                <TouchableOpacity style={styles.backBtn} activeOpacity={0.7} onPress={() => router.push('/search-input' as any)}>
+                    <Feather name="search" size={22} color={Colors.slate900} />
+                </TouchableOpacity>
             </View>
 
             {/* Filters */}
@@ -58,13 +66,44 @@ export default function SearchScreen() {
                 </TouchableOpacity>
             </ScrollView>
 
+            <View style={styles.categoriesSection}>
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.categoriesRow}
+                >
+                    {CATEGORIES.map((cat, i) => {
+                        const isSelected = selectedCategory === cat.label;
+                        return (
+                            <TouchableOpacity
+                                key={i}
+                                style={[
+                                    styles.categoryCard,
+                                    isSelected && styles.categoryCardActive,
+                                ]}
+                                activeOpacity={0.8}
+                                onPress={() => setSelectedCategory(isSelected ? null : cat.label)}
+                            >
+                                <Image source={cat.image} style={styles.categoryImage} resizeMode="contain" />
+                                <Text style={[
+                                    styles.categoryLabel,
+                                    isSelected && styles.categoryLabelActive,
+                                ]} numberOfLines={1}>
+                                    {cat.label}
+                                </Text>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </ScrollView>
+            </View>
+
             {/* Results */}
             <ScrollView
                 style={styles.scroll}
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
-                <Text style={styles.resultsTitle}>Results for "Burgers"</Text>
+                <Text style={styles.resultsTitle}>{selectedCategory ?? 'Todos los restaurantes'}</Text>
 
                 <TouchableOpacity
                     style={styles.card}
@@ -126,12 +165,18 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 16,
-        paddingBottom: 8,
+        paddingBottom: 12,
         paddingTop: 8,
         gap: 12,
         backgroundColor: Colors.white,
         borderBottomWidth: 1,
-        borderBottomColor: `${Colors.primary}18`,
+        borderBottomColor: Colors.gray100,
+    },
+    headerTitle: {
+        flex: 1,
+        fontSize: 22,
+        fontWeight: '800',
+        color: Colors.slate900,
     },
     backBtn: {
         width: 40,
@@ -141,30 +186,51 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    backIcon: { fontSize: 18, color: Colors.slate900 },
-    searchBar: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: Colors.gray100,
-        borderRadius: 999,
-        height: 48,
-        paddingHorizontal: 16,
-        gap: 8,
-    },
-    searchIcon: { fontSize: 18 },
-    searchInput: {
-        flex: 1,
-        fontSize: 14,
-        fontWeight: '500',
-        color: Colors.slate900,
-    },
-    filtersScroll: { maxHeight: 60 },
+    searchBar: { flex: 1 },
+    searchIcon: {},
+    searchInput: {},
+    filtersScroll: { maxHeight: 60, flexGrow: 0 },
     filtersRow: {
         paddingHorizontal: 16,
         paddingVertical: 10,
         gap: 8,
         alignItems: 'center',
+    },
+    categoriesSection: { paddingVertical: 16, paddingTop: 20 },
+    categoriesRow: { paddingHorizontal: 16, gap: 12, paddingBottom: 4 },
+    categoryCard: {
+        width: 90,
+        backgroundColor: Colors.white,
+        borderRadius: 20,
+        paddingVertical: 14,
+        paddingHorizontal: 8,
+        alignItems: 'center',
+        gap: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 6,
+        elevation: 2,
+        borderWidth: 1,
+        borderColor: Colors.gray100,
+    },
+    categoryCardActive: {
+        backgroundColor: `${Colors.primary}15`,
+        borderColor: `${Colors.primary}40`,
+    },
+    categoryImage: {
+        width: 60,
+        height: 60,
+    },
+    categoryLabel: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: Colors.slate700,
+        textAlign: 'center',
+    },
+    categoryLabelActive: {
+        color: Colors.primary,
+        fontWeight: '700',
     },
     filterOutline: {
         height: 36,

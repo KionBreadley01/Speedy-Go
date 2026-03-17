@@ -16,12 +16,12 @@ import { restaurantService, Restaurant } from '../../Lib/services/restaurantServ
 import { useCartStore } from '../../store/cartStore';
 
 const CATEGORIES = [
-    { label: 'Deals', icon: '🏷️' },
-    { label: 'Pizza', icon: '🍕' },
-    { label: 'Burger', icon: '🍔' },
-    { label: 'Asian', icon: '🍜' },
-    { label: 'Mexican', icon: '🌮' },
-    { label: 'Healthy', icon: '🥗' },
+    { label: 'Pizza',    image: require('../../assets/categories/pizza.png') },
+    { label: 'Burger',   image: require('../../assets/categories/burger.png') },
+    { label: 'Asian',    image: require('../../assets/categories/sushi.png') },
+    { label: 'Mexican',  image: require('../../assets/categories/tacos.png') },
+    { label: 'Healthy',  image: require('../../assets/categories/healthy.png') },
+    { label: 'Súper',    image: require('../../assets/categories/super.png') },
 ];
 
 export default function HomePage() {
@@ -86,7 +86,7 @@ export default function HomePage() {
             {/* Search bar */}
             <TouchableOpacity
                 style={styles.searchBar}
-                onPress={() => router.push('/search')}
+                onPress={() => router.push('/search-input' as any)}
                 activeOpacity={0.8}
             >
                 <Text style={styles.searchIcon}>🔍</Text>
@@ -118,7 +118,7 @@ export default function HomePage() {
                                 activeOpacity={0.7}
                             >
                                 <View style={styles.categoryCircle}>
-                                    <Text style={styles.categoryEmoji}>{cat.icon}</Text>
+                                    <Image source={cat.image} style={styles.categoryImg} resizeMode="contain" />
                                 </View>
                                 <Text style={styles.categoryLabel}>{cat.label}</Text>
                             </TouchableOpacity>
@@ -414,4 +414,5 @@ const styles = StyleSheet.create({
     cartCountText: { fontSize: 13, fontWeight: '700', color: Colors.white },
     cartLabel: { fontSize: 15, fontWeight: '700', color: Colors.white },
     cartTotal: { fontSize: 15, fontWeight: '700', color: Colors.white },
+    categoryImg: { width: 48, height: 48 },
 });
