@@ -3,7 +3,6 @@ import { useRouter } from 'expo-router';
 import { useState, useEffect } from 'react';
 import {
     ActivityIndicator,
-    Alert,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
@@ -18,6 +17,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Feather } from '@expo/vector-icons';
 import { auth } from '../../Lib/firebase';
 import { userService, UserProfile } from '../../Lib/services/userService';
+import { CustomAlert } from '@/components/CustomAlert';
 
 const GENDER_OPTIONS = ['Hombre', 'Mujer', 'Sin definir', '35 tipo de Gey'];
 
@@ -38,6 +38,14 @@ export default function EditProfileScreen() {
 
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [date, setDate] = useState(new Date());
+
+    // Alert states
+    const [alertLoadError, setAlertLoadError] = useState(false);
+    const [alertSaveSuccess, setAlertSaveSuccess] = useState(false);
+    const [alertSaveError, setAlertSaveError] = useState(false);
+    const [alertDeleteConfirm, setAlertDeleteConfirm] = useState(false);
+    const [alertDeleteError, setAlertDeleteError] = useState('');
+    const [deleting, setDeleting] = useState(false);
 
     useEffect(() => {
         loadProfile();
@@ -66,7 +74,7 @@ export default function EditProfileScreen() {
                 setDate(new Date(profileData.dob));
             }
         } catch (error) {
-            Alert.alert("Error", "No se pudo cargar el perfil");
+            setAlertLoadError(true);
         } finally {
             setLoading(false);
         }
@@ -79,40 +87,29 @@ export default function EditProfileScreen() {
         setSaving(true);
         try {
             await userService.saveUserProfile(user.uid, form);
-            Alert.alert("Éxito", "Perfil actualizado correctamente", [
-                { text: "OK", onPress: () => router.back() }
-            ]);
+            setAlertSaveSuccess(true);
         } catch (error) {
-            Alert.alert("Error", "No se pudo guardar el perfil");
+            setAlertSaveError(true);
         } finally {
             setSaving(false);
         }
     };
 
-    const handleDeleteAccount = () => {
-        Alert.alert(
-            "Eliminar Cuenta",
-            "¿Estás seguro de que deseas eliminar tu cuenta? Esta acción no se puede deshacer y perderás todo tu historial.",
-            [
-                { text: "Cancelar", style: "cancel" },
-                { 
-                    text: "Sí, eliminar", 
-                    style: "destructive",
-                    onPress: async () => {
-                        const user = auth.currentUser;
-                        if (!user) return;
-                        try {
-                            setLoading(true);
-                            await userService.deleteUserAccount(user);
-                            router.replace('/');
-                        } catch (error: any) {
-                            Alert.alert("Error", "No se pudo eliminar la cuenta. " + error.message);
-                            setLoading(false);
-                        }
-                    }
-                }
-            ]
-        );
+    const handleDeleteAccount = () => setAlertDeleteConfirm(true);
+
+    const doDeleteAccount = async () => {
+        const user = auth.currentUser;
+        if (!user) return;
+        setDeleting(true);
+        setAlertDeleteConfirm(false);
+        try {
+            await userService.deleteUserAccount(user);
+            router.replace('/');
+        } catch (error: any) {
+            setAlertDeleteError('No se pudo eliminar la cuenta. ' + error.message);
+        } finally {
+            setDeleting(false);
+        }
     };
 
     const handleDateChange = (event: any, selectedDate?: Date) => {
@@ -273,6 +270,21 @@ export default function EditProfileScreen() {
 
                 </ScrollView>
             </KeyboardAvoidingView>
+
+            {/* Load error */}
+            <CustomAlert visible={alertLoadError} title="Error" message="No se pudo cargar el perfil. Intenta de nuevo." variant="danger" onClose={() => setAlertLoadError(false)} actions={[{ label: 'Entendido', primary: true, onPress: () => setAlertLoadError(false) }]} />
+
+            {/* Save success */}
+            <CustomAlert visible={alertSaveSuccess} title="¡Listo!" message="Tu perfil ha sido actualizado correctamente." variant="success" onClose={() => { setAlertSaveSuccess(false); router.back(); }} actions={[{ label: 'Continuar', primary: true, onPress: () => { setAlertSaveSuccess(false); router.back(); } }]} />
+
+            {/* Save error */}
+            <CustomAlert visible={alertSaveError} title="Error" message="No se pudo guardar el perfil. Intenta de nuevo." variant="warning" onClose={() => setAlertSaveError(false)} actions={[{ label: 'Entendido', primary: true, onPress: () => setAlertSaveError(false) }]} />
+
+            {/* Delete account confirm */}
+            <CustomAlert visible={alertDeleteConfirm} title="Eliminar cuenta" message="¿Estás seguro? Esta acción no se puede deshacer y perderás todo tu historial." variant="danger" onClose={() => setAlertDeleteConfirm(false)} actions={[{ label: 'Sí, eliminar mi cuenta', primary: true, onPress: doDeleteAccount, loading: deleting }, { label: 'Cancelar', primary: false, onPress: () => setAlertDeleteConfirm(false) }]} />
+
+            {/* Delete account error */}
+            <CustomAlert visible={!!alertDeleteError} title="Error" message={alertDeleteError} variant="warning" onClose={() => setAlertDeleteError('')} actions={[{ label: 'Entendido', primary: true, onPress: () => setAlertDeleteError('') }]} />
         </SafeAreaView>
     );
 }

@@ -131,7 +131,8 @@ export default function AddAddressScreen() {
                 longitude: loc.coords.longitude,
             });
             if (place) {
-                const localName = [place.city || place.subregion, place.region, place.country]
+                const street = [place.name, place.street].filter(Boolean).join(' ');
+                const localName = [street, place.city || place.subregion, place.region, place.country]
                     .filter(Boolean).join(', ');
                 setDescription(localName);
             }
@@ -327,7 +328,8 @@ export default function AddAddressScreen() {
                                         try {
                                             const [place] = await Location.reverseGeocodeAsync({ latitude, longitude });
                                             if (place) {
-                                                const localName = [place.city || place.subregion, place.region, place.country]
+                                                const street = [place.name, place.street].filter(Boolean).join(' ');
+                                                const localName = [street, place.city || place.subregion, place.region, place.country]
                                                     .filter(Boolean).join(', ');
                                                 setDescription(localName);
                                             }

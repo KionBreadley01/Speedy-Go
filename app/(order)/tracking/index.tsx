@@ -5,11 +5,13 @@ import {
     Alert,
     Animated,
     Image,
+    Modal,
     StyleSheet,
     Text,
     TouchableOpacity,
     View,
     ScrollView,
+    ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -23,6 +25,8 @@ export default function TrackingScreen() {
     const [status, setStatus] = useState<OrderStatus>('pending');
     const [order, setOrder] = useState<Order | null>(null);
     const [loading, setLoading] = useState(true);
+    const [showCancelModal, setShowCancelModal] = useState(false);
+    const [cancelling, setCancelling] = useState(false);
 
     useEffect(() => {
         Animated.loop(
@@ -48,27 +52,21 @@ export default function TrackingScreen() {
 
     const handleCancelOrder = () => {
         if (!orderId || (status !== 'pending' && status !== 'accepted')) return;
-        Alert.alert(
-            "Cancelar Pedido",
-            "¿Estás seguro de que quieres cancelar este pedido?",
-            [
-                { text: "No", style: "cancel" },
-                {
-                    text: "Sí, cancelar",
-                    style: "destructive",
-                    onPress: async () => {
-                        try {
-                            setLoading(true);
-                            await orderService.cancelOrder(orderId);
-                            router.replace('/(tabs)/orders');
-                        } catch (error) {
-                            Alert.alert("Error", "No se pudo cancelar el pedido. Intenta de nuevo.");
-                            setLoading(false);
-                        }
-                    }
-                }
-            ]
-        );
+        setShowCancelModal(true);
+    };
+
+    const confirmCancel = async () => {
+        setCancelling(true);
+        try {
+            await orderService.cancelOrder(orderId);
+            setShowCancelModal(false);
+            router.replace('/(tabs)/orders');
+        } catch (error) {
+            setShowCancelModal(false);
+            Alert.alert('Error', 'No se pudo cancelar el pedido.');
+        } finally {
+            setCancelling(false);
+        }
     };
 
     const getSteps = () => {
@@ -194,6 +192,51 @@ export default function TrackingScreen() {
                 </View>
             )}
         </ScrollView>
+
+        {/* Custom Cancel Confirmation Modal */}
+        <Modal
+            visible={showCancelModal}
+            animationType="slide"
+            transparent={true}
+            onRequestClose={() => setShowCancelModal(false)}
+        >
+            <View style={styles.modalOverlay}>
+                <TouchableOpacity style={{ flex: 1 }} onPress={() => !cancelling && setShowCancelModal(false)} />
+                <View style={styles.modalSheet}>
+                    {/* Icon */}
+                    <View style={styles.modalIconWrap}>
+                        <Feather name="alert-triangle" size={28} color="#EF4444" />
+                    </View>
+
+                    <Text style={styles.modalTitle}>Cancelar pedido</Text>
+                    <Text style={styles.modalDesc}>
+                        ¿Estás seguro de que quieres cancelar este pedido? Esta acción no se puede deshacer.
+                    </Text>
+
+                    <TouchableOpacity
+                        style={[styles.modalConfirmBtn, cancelling && { opacity: 0.7 }]}
+                        activeOpacity={0.85}
+                        onPress={confirmCancel}
+                        disabled={cancelling}
+                    >
+                        {cancelling ? (
+                            <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                            <Text style={styles.modalConfirmText}>Sí, cancelar pedido</Text>
+                        )}
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.modalKeepBtn}
+                        activeOpacity={0.8}
+                        onPress={() => setShowCancelModal(false)}
+                        disabled={cancelling}
+                    >
+                        <Text style={styles.modalKeepText}>No, mantener pedido</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </Modal>
         </SafeAreaView>
     );
 }
@@ -368,4 +411,78 @@ const styles = StyleSheet.create({
     totalLabel: { fontSize: 15, fontWeight: '600', color: Colors.slate500 },
     totalValue: { fontSize: 18, fontWeight: '800', color: Colors.primary },
     scrollContent: { paddingBottom: 40 },
+
+    /* Custom Cancel Modal */
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.45)',
+        justifyContent: 'flex-end',
+    },
+    modalSheet: {
+        backgroundColor: '#fff',
+        borderTopLeftRadius: 32,
+        borderTopRightRadius: 32,
+        paddingHorizontal: 28,
+        paddingTop: 28,
+        paddingBottom: 44,
+        alignItems: 'center',
+        gap: 14,
+    },
+    modalIconWrap: {
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        backgroundColor: 'rgba(239,68,68,0.1)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 4,
+    },
+    modalTitle: {
+        fontSize: 22,
+        fontWeight: '900',
+        color: '#0F172A',
+        letterSpacing: -0.5,
+        textAlign: 'center',
+    },
+    modalDesc: {
+        fontSize: 15,
+        color: '#64748B',
+        textAlign: 'center',
+        lineHeight: 22,
+        fontWeight: '500',
+        paddingHorizontal: 8,
+    },
+    modalConfirmBtn: {
+        width: '100%',
+        height: 58,
+        backgroundColor: '#EF4444',
+        borderRadius: 999,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 8,
+        shadowColor: '#EF4444',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 10,
+        elevation: 4,
+    },
+    modalConfirmText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '800',
+        letterSpacing: 0.2,
+    },
+    modalKeepBtn: {
+        width: '100%',
+        height: 54,
+        backgroundColor: '#F1F5F9',
+        borderRadius: 999,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    modalKeepText: {
+        color: '#0F172A',
+        fontSize: 15,
+        fontWeight: '700',
+    },
 });

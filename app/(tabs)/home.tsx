@@ -76,13 +76,12 @@ export default function HomePage() {
                     onPress={() => router.push('/addresses' as any)}
                     activeOpacity={0.7}
                 >
-                    <Text style={styles.deliveringLabel}>Entregando en</Text>
                     <View style={styles.locationNameRow}>
-                        <Text style={styles.pinEmoji}>📍</Text>
-                        <Text style={styles.locationName} numberOfLines={1}>
+                        <Feather name="map-pin" size={14} color={Colors.primary} style={{ marginRight: 2 }} />
+                        <Text style={styles.locationName} numberOfLines={2}>
                             {getCurrentAddressName()}
                         </Text>
-                        <Text style={styles.chevron}>⌄</Text>
+                        <Feather name="chevron-down" size={16} color={Colors.gray400} />
                     </View>
                 </TouchableOpacity>
 
@@ -236,23 +235,26 @@ const styles = StyleSheet.create({
         paddingTop: 8,
         paddingBottom: 4,
     },
-    locationRow: { flex: 1 },
-    deliveringLabel: {
-        fontSize: 11,
-        fontWeight: '700',
-        color: `${Colors.primary}cc`,
-        textTransform: 'uppercase',
-        letterSpacing: 0.8,
-        marginBottom: 2,
+    locationRow: { 
+        flex: 1, 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        paddingLeft: 44, // offset the cart icon for true centration
     },
     locationNameRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 2,
+        justifyContent: 'center',
+        gap: 4,
+        paddingHorizontal: 12,
     },
-    pinEmoji: { fontSize: 15, color: Colors.primary },
-    locationName: { fontSize: 13, fontWeight: '700', color: Colors.slate900, marginRight: 2 },
-    chevron: { fontSize: 14, color: Colors.slate500, fontWeight: '800' },
+    locationName: { 
+        fontSize: 13, 
+        fontWeight: '700', 
+        color: Colors.slate900, 
+        textAlign: 'center',
+        maxWidth: '85%',
+    },
     cartIconBadge: {
         width: 44,
         height: 44,
@@ -292,7 +294,8 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.gray100,
         borderRadius: 999,
         marginHorizontal: 16,
-        marginVertical: 10,
+        marginTop: 6, // Raised slightly: from 10 to 6
+        marginBottom: 8,
         height: 48,
         paddingHorizontal: 16,
         gap: 10,
@@ -338,12 +341,17 @@ const styles = StyleSheet.create({
     categoriesRow: { gap: 16, paddingVertical: 4 },
     categoryItem: { alignItems: 'center', gap: 6 },
     categoryCircle: {
-        width: 64,
-        height: 64,
-        borderRadius: 32,
-        backgroundColor: `${Colors.primary}18`,
+        width: 68, // slightly larger
+        height: 68,
+        borderRadius: 18, // Squircle 
+        backgroundColor: '#FFF7F2', // soft peach tint matching other premium lists
         alignItems: 'center',
         justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.04,
+        shadowRadius: 8,
+        elevation: 2,
     },
     categoryEmoji: { fontSize: 26 },
     categoryLabel: {
