@@ -1,6 +1,6 @@
 import { Colors } from '@/constants/colors';
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useState, useEffect } from 'react';
 import {
     Image,
     ScrollView,
@@ -24,7 +24,14 @@ const CATEGORIES = [
 
 export default function SearchScreen() {
     const router = useRouter();
+    const params = useLocalSearchParams<{ category?: string }>();
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (params.category) {
+            setSelectedCategory(params.category);
+        }
+    }, [params.category]);
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
@@ -103,8 +110,6 @@ export default function SearchScreen() {
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
-                <Text style={styles.resultsTitle}>{selectedCategory ?? 'Todos los restaurantes'}</Text>
-
                 <TouchableOpacity
                     style={styles.card}
                     onPress={() => router.push('/restaurant/1' as any)}

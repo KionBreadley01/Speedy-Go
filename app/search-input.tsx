@@ -26,7 +26,7 @@ const TRENDING = [
 
 const EXPLORE = [
     { label: 'Tacos',         image: require('../assets/categories/tacos.png') },
-    { label: 'Pizzas',        image: require('../assets/categories/pizza.png') },
+    { label: 'Pizza',         image: require('../assets/categories/pizza.png') },
     { label: 'Hamburguesas',  image: require('../assets/categories/burger.png') },
     { label: 'Sushi',         image: require('../assets/categories/sushi.png') },
     { label: 'Saludable',     image: require('../assets/categories/healthy.png') },
@@ -40,7 +40,7 @@ export default function SearchInputScreen() {
 
     const handleSearch = (term: string) => {
         if (term.trim()) {
-            router.push('/search' as any);
+            router.push({ pathname: '/search', params: { category: term } } as any);
         }
     };
 
@@ -147,7 +147,7 @@ export default function SearchInputScreen() {
                                 key={i}
                                 style={styles.exploreCard}
                                 activeOpacity={0.8}
-                                onPress={() => router.push('/search' as any)}
+                                onPress={() => handleSearch(cat.label)}
                             >
                                 <Image source={cat.image} style={styles.exploreImage} resizeMode="contain" />
                                 <Text style={styles.exploreLabel} numberOfLines={1}>

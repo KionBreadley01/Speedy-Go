@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Speedy Go",
-    "slug": "my-appxd",
+    "slug": "speedy-go",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -9,7 +9,11 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Speedy Go necesita tu ubicación para mostrarte la dirección exacta de entrega.",
+        "NSLocationAlwaysUsageDescription": "Speedy Go necesita tu ubicación para mostrarte la dirección exacta de entrega."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -17,7 +21,12 @@
         "foregroundImage": "./assets/images/android-icon-foreground.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.kionsanchez.speedygo",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
     },
     "web": {
       "output": "static",
@@ -25,6 +34,12 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Speedy Go necesita acceso a tu ubicación para mostrar direcciones de entrega precisas."
+        }
+      ],
       [
         "expo-splash-screen",
         {
@@ -43,6 +58,12 @@
     "experiments": {
       "typedRoutes": false,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "2eed3387-b853-473d-a059-5a1022eabfa7"
+      }
     }
   }
 }
