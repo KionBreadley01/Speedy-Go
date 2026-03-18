@@ -41,12 +41,54 @@ export default function AddAddressScreen() {
     const [addressType, setAddressType] = useState('Casa');
     
     // Form state
-    const [description, setDescription] = useState('Huamantla');
+    const [description, setDescription] = useState('');
     const [details, setDetails] = useState('');
     const [label, setLabel] = useState('');
     const [tag, setTag] = useState(''); 
     const [deliveryOption, setDeliveryOption] = useState('door'); 
     const [instructions, setInstructions] = useState('');
+
+    // Step 1 search autocomplete
+    const [searchQuery, setSearchQuery] = useState('');
+    const [suggestions, setSuggestions] = useState<{ name: string; lat: number; lon: number }[]>([]);
+    const [suggestionLoading, setSuggestionLoading] = useState(false);
+
+    useEffect(() => {
+        if (searchQuery.trim().length < 3) {
+            setSuggestions([]);
+            return;
+        }
+        const timer = setTimeout(async () => {
+            setSuggestionLoading(true);
+            try {
+                const res = await fetch(
+                    `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQuery)}&format=json&limit=6&accept-language=es`,
+                    { headers: { 'User-Agent': 'SpeedyGoApp/1.0' } }
+                );
+                const data = await res.json();
+                setSuggestions(data.map((item: any) => ({
+                    name: item.display_name,
+                    lat: parseFloat(item.lat),
+                    lon: parseFloat(item.lon),
+                })));
+            } catch (_) {
+                setSuggestions([]);
+            } finally {
+                setSuggestionLoading(false);
+            }
+        }, 400);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
+    const handleSelectSuggestion = (s: { name: string; lat: number; lon: number }) => {
+        setCoords({ latitude: s.lat, longitude: s.lon });
+        // Use first two parts (city, region) for description
+        const short = s.name.split(',').slice(0, 2).join(',').trim();
+        setDescription(short);
+        setSuggestions([]);
+        setSearchQuery('');
+        setStep(2);
+    };
 
     const { addresses, addAddressToStore, updateAddressInStore } = useAddressStore();
     const [locationLoading, setLocationLoading] = useState(false);
@@ -89,7 +131,8 @@ export default function AddAddressScreen() {
                 longitude: loc.coords.longitude,
             });
             if (place) {
-                const localName = [place.city || place.subregion, place.region, place.country]
+                const street = [place.name, place.street].filter(Boolean).join(' ');
+                const localName = [street, place.city || place.subregion, place.region, place.country]
                     .filter(Boolean).join(', ');
                 setDescription(localName);
             }
@@ -167,8 +210,45 @@ export default function AddAddressScreen() {
                                     placeholderTextColor={Colors.gray400} 
                                     style={styles.searchInput}
                                     autoFocus
+                                    value={searchQuery}
+                                    onChangeText={setSearchQuery}
+                                    returnKeyType="search"
                                 />
+                                {searchQuery.length > 0 && (
+                                    <TouchableOpacity onPress={() => { setSearchQuery(''); setSuggestions([]); }}>
+                                        <Feather name="x" size={18} color={Colors.gray400} />
+                                    </TouchableOpacity>
+                                )}
                             </View>
+
+                            {/* Suggestions dropdown */}
+                            {(suggestions.length > 0 || suggestionLoading) && (
+                                <View style={styles.suggestionsBox}>
+                                    {suggestionLoading ? (
+                                        <View style={styles.suggestionLoading}>
+                                            <ActivityIndicator size="small" color={Colors.slate700} />
+                                            <Text style={styles.suggestionLoadText}>Buscando...</Text>
+                                        </View>
+                                    ) : suggestions.map((s, i) => (
+                                        <TouchableOpacity 
+                                            key={i} 
+                                            style={[styles.suggestionItem, i < suggestions.length - 1 && styles.suggestionItemBorder]}
+                                            activeOpacity={0.75}
+                                            onPress={() => handleSelectSuggestion(s)}
+                                        >
+                                            <Feather name="map-pin" size={15} color={Colors.slate700} style={{ marginRight: 12, marginTop: 2 }} />
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={styles.suggestionName} numberOfLines={1}>
+                                                    {s.name.split(',')[0]}
+                                                </Text>
+                                                <Text style={styles.suggestionSub} numberOfLines={1}>
+                                                    {s.name.split(',').slice(1, 3).join(',').trim()}
+                                                </Text>
+                                            </View>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            )}
 
                             {/* Use current GPS location */}
                             <TouchableOpacity 
@@ -242,9 +322,18 @@ export default function AddAddressScreen() {
                                     showsMyLocationButton={false}
                                     scrollEnabled={true}
                                     zoomEnabled={true}
-                                    onPress={(e) => {
+                                    onPress={async (e) => {
                                         const { latitude, longitude } = e.nativeEvent.coordinate;
                                         setCoords({ latitude, longitude });
+                                        try {
+                                            const [place] = await Location.reverseGeocodeAsync({ latitude, longitude });
+                                            if (place) {
+                                                const street = [place.name, place.street].filter(Boolean).join(' ');
+                                                const localName = [street, place.city || place.subregion, place.region, place.country]
+                                                    .filter(Boolean).join(', ');
+                                                setDescription(localName);
+                                            }
+                                        } catch (_) {}
                                     }}
                                 >
                                     {coords && (
@@ -510,7 +599,34 @@ const styles = StyleSheet.create({
     },
     mapActionText: { fontSize: 16, fontWeight: '800', color: Colors.slate900 },
     mapActionSub: { fontSize: 12, color: Colors.gray400, marginTop: 2, fontWeight: '500' },
-    poweredBy: { textAlign: 'center', color: Colors.gray400, marginTop: 40, fontSize: 13, fontWeight: '500' },
+    poweredBy: { textAlign: 'center', color: Colors.gray400, marginTop: 24, fontSize: 13, fontWeight: '500' },
+    suggestionsBox: {
+        backgroundColor: Colors.white,
+        borderRadius: 20,
+        marginBottom: 14,
+        overflow: 'hidden',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+        elevation: 3,
+    },
+    suggestionLoading: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 18,
+        gap: 12,
+    },
+    suggestionLoadText: { fontSize: 14, color: Colors.slate700, fontWeight: '600' },
+    suggestionItem: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        paddingHorizontal: 18,
+        paddingVertical: 14,
+    },
+    suggestionItemBorder: { borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+    suggestionName: { fontSize: 15, fontWeight: '800', color: Colors.slate900, marginBottom: 2 },
+    suggestionSub: { fontSize: 12, color: Colors.gray400, fontWeight: '500' },
 
     /* Step 2 Form / Map */
     mapPreview: { height: 260, position: 'relative', width: '100%', overflow: 'hidden' },

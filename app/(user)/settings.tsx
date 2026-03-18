@@ -4,7 +4,6 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
     ActivityIndicator,
-    Alert,
     ScrollView,
     StyleSheet,
     Text,
@@ -13,35 +12,28 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { auth } from '../../Lib/firebase';
+import { CustomAlert } from '@/components/CustomAlert';
 
 export default function SettingsScreen() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
 
-    const handleSignOut = async () => {
-        Alert.alert(
-            'Cerrar sesión',
-            '¿Estás seguro de que deseas cerrar sesión?',
-            [
-                { text: 'Cancelar', style: 'cancel' },
-                {
-                    text: 'Cerrar sesión',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            setLoading(true);
-                            await auth.signOut();
-                            // Optional: navigate to login explicitly if onAuthStateChanged doesn't handle it
-                            router.replace('/(auth)/login' as any);
-                        } catch (error) {
-                            Alert.alert('Error', 'No se pudo cerrar la sesión.');
-                        } finally {
-                            setLoading(false);
-                        }
-                    },
-                },
-            ]
-        );
+    const [showSignOutAlert, setShowSignOutAlert] = useState(false);
+    const [showErrorAlert, setShowErrorAlert] = useState(false);
+
+    const handleSignOut = () => setShowSignOutAlert(true);
+
+    const doSignOut = async () => {
+        try {
+            setLoading(true);
+            setShowSignOutAlert(false);
+            await auth.signOut();
+            router.replace('/(auth)/login' as any);
+        } catch (error) {
+            setShowErrorAlert(true);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const renderListItem = (title: string, value?: string, onPress?: () => void) => (
@@ -100,6 +92,31 @@ export default function SettingsScreen() {
 
                 </ScrollView>
             )}
+
+            {/* Sign-out confirmation */}
+            <CustomAlert
+                visible={showSignOutAlert}
+                title="Cerrar sesión"
+                message="¿Estás seguro de que deseas cerrar sesión de tu cuenta?"
+                variant="danger"
+                onClose={() => setShowSignOutAlert(false)}
+                actions={[
+                    { label: 'Sí, cerrar sesión', primary: true, onPress: doSignOut, loading },
+                    { label: 'Cancelar', primary: false, onPress: () => setShowSignOutAlert(false) },
+                ]}
+            />
+
+            {/* Sign-out error */}
+            <CustomAlert
+                visible={showErrorAlert}
+                title="Error"
+                message="No se pudo cerrar la sesión. Intenta de nuevo."
+                variant="warning"
+                onClose={() => setShowErrorAlert(false)}
+                actions={[
+                    { label: 'Entendido', primary: true, onPress: () => setShowErrorAlert(false) },
+                ]}
+            />
         </SafeAreaView>
     );
 }

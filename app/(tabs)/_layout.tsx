@@ -1,10 +1,10 @@
 import { Colors } from '@/constants/colors';
 import { Feather } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
-import { useEffect, useState } from 'react';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import { auth, db } from '../../Lib/firebase';
 
 type TabIconProps = {
@@ -39,8 +39,8 @@ export default function TabLayout() {
 
         unsubscribeOrders = onSnapshot(q, (snapshot) => {
           const activeOrders = snapshot.docs.filter(doc => {
-             const status = doc.data().status;
-             return ['pending', 'accepted', 'preparing', 'delivering'].includes(status);
+            const status = doc.data().status;
+            return ['pending', 'accepted', 'preparing', 'delivering'].includes(status);
           });
           setHasActiveOrder(activeOrders.length > 0);
         });
@@ -105,10 +105,10 @@ export default function TabLayout() {
 }
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: '#e7e6e1ff', // Un tono de blanco diferente (off-white perlado) para destacar
+    backgroundColor: '#ffffffff', // Un tono de blanco diferente (off-white perlado) para destacar
     borderTopColor: '#000000ff',
     borderTopWidth: 1,
-    height: 88, // Más grande
+    height: 58, // Más grande
     paddingBottom: 10,
     paddingTop: 10,
     paddingHorizontal: 16,
