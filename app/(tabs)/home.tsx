@@ -11,46 +11,85 @@ import {
     View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Feather } from '@expo/vector-icons';
+import { Feather, FontAwesome } from '@expo/vector-icons';
 import { restaurantService, Restaurant } from '../../Lib/services/restaurantService';
 import { useCartStore } from '../../store/cartStore';
 import { useAddressStore } from '../../store/addressStore';
 
 const CATEGORIES = [
-    { label: 'Pizza',    image: require('../../assets/categories/pizza.png') },
-    { label: 'Burger',   image: require('../../assets/categories/burger.png') },
-    { label: 'Asian',    image: require('../../assets/categories/sushi.png') },
-    { label: 'Mexican',  image: require('../../assets/categories/tacos.png') },
-    { label: 'Healthy',  image: require('../../assets/categories/healthy.png') },
-    { label: 'Súper',    image: require('../../assets/categories/super.png') },
+    { label: 'Pizza',        image: require('../../assets/categories/pizza.png') },
+    { label: 'Hamburguesas', image: require('../../assets/categories/burger.png') },
+    { label: 'Tacos',        image: require('../../assets/categories/tacos.png') },
+    { label: 'Sushi',        image: require('../../assets/categories/sushi.png') },
+    { label: 'Saludable',    image: require('../../assets/categories/healthy.png') },
+    { label: 'Súper',        image: require('../../assets/categories/super.png') },
 ];
 
 export default function HomePage() {
     const router = useRouter();
     const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
     const [loading, setLoading] = useState(true);
+    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+    const [products, setProducts] = useState<any[]>([]); // general products
 
     const cartTotalItems = useCartStore((state) => state.getTotalItems());
     const cartTotalPrice = useCartStore((state) => state.getTotalPrice());
     
     const { getCurrentAddressName, setAddresses } = useAddressStore();
 
+    const [favorites, setFavorites] = useState<string[]>([]); // liked IDs
+
     useEffect(() => {
-        const fetchAddresses = async () => {
-             const { auth } = await import('../../Lib/firebase');
-             const { userService } = await import('../../Lib/services/userService');
-             const user = auth.currentUser;
-             if (user) {
-                  try {
-                       const data = await userService.getAddresses(user.uid);
-                       setAddresses(data);
-                  } catch (e) {
-                       console.error(e);
-                  }
-             }
+        const loadUserData = async () => {
+            const { auth } = await import('../../Lib/firebase');
+            const { userService } = await import('../../Lib/services/userService');
+            const user = auth.currentUser;
+            if (user) {
+                try {
+                    const data = await userService.getAddresses(user.uid);
+                    setAddresses(data);
+
+                    const favs = await userService.getFavorites(user.uid);
+                    setFavorites(favs);
+                } catch (e) {
+                    console.error(e);
+                }
+            }
         };
-        fetchAddresses();
+        loadUserData();
     }, []);
+
+    const toggleFavorite = async (restaurantId: string) => {
+        const { auth } = await import('../../Lib/firebase');
+        const { userService } = await import('../../Lib/services/userService');
+        const user = auth.currentUser;
+
+        if (!user) {
+            alert("Inicia sesión para guardar favoritos");
+            return;
+        }
+
+        const isFav = favorites.includes(restaurantId);
+        
+        // Optimistic UI updates
+        if (isFav) {
+            setFavorites(prev => prev.filter(id => id !== restaurantId));
+            try {
+                await userService.deleteFavorite(user.uid, restaurantId);
+            } catch (e) {
+                console.error(e);
+                setFavorites(prev => [...prev, restaurantId]); // Rollback on error
+            }
+        } else {
+            setFavorites(prev => [...prev, restaurantId]);
+            try {
+                await userService.addFavorite(user.uid, restaurantId);
+            } catch (e) {
+                console.error(e);
+                setFavorites(prev => prev.filter(id => id !== restaurantId)); // Rollback on error
+            }
+        }
+    };
 
     useEffect(() => {
         const fetchRestaurants = async () => {
@@ -64,8 +103,32 @@ export default function HomePage() {
             }
         };
 
+        const fetchProducts = async () => {
+            try {
+                const data = await restaurantService.getProducts();
+                setProducts(data);
+            } catch (error) {
+                console.error("Error fetching products:", error);
+            }
+        };
+
         fetchRestaurants();
+        fetchProducts();
     }, []);
+
+    // Filtered data logic
+    const filteredRestaurants = selectedCategory 
+        ? restaurants.filter(r => r.category.toLowerCase().includes(selectedCategory.toLowerCase()))
+        : restaurants;
+
+    const filteredProducts = selectedCategory
+        ? products.filter(p => {
+             const rest = restaurants.find(r => r.id === p.restaurantId);
+             if (rest?.category.toLowerCase().includes(selectedCategory.toLowerCase())) return true;
+             if (p.name.toLowerCase().includes(selectedCategory.toLowerCase())) return true;
+             return false;
+          })
+        : [];
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
@@ -129,21 +192,53 @@ export default function HomePage() {
                         showsHorizontalScrollIndicator={false}
                         contentContainerStyle={styles.categoriesRow}
                     >
-                        {CATEGORIES.map((cat, i) => (
-                            <TouchableOpacity
-                                key={i}
-                                style={styles.categoryItem}
-                                onPress={() => router.push('/search')}
-                                activeOpacity={0.7}
-                            >
-                                <View style={styles.categoryCircle}>
-                                    <Image source={cat.image} style={styles.categoryImg} resizeMode="contain" />
-                                </View>
-                                <Text style={styles.categoryLabel}>{cat.label}</Text>
-                            </TouchableOpacity>
-                        ))}
+                        {CATEGORIES.map((cat, i) => {
+                            const isActive = selectedCategory?.toLowerCase() === cat.label.toLowerCase();
+                            return (
+                                <TouchableOpacity
+                                    key={i}
+                                    style={styles.categoryItem}
+                                    onPress={() => setSelectedCategory(isActive ? null : cat.label)}
+                                    activeOpacity={0.7}
+                                >
+                                    <View style={[styles.categoryCircle, isActive && { borderColor: Colors.primary, borderWidth: 2 }]}>
+                                        <Image source={cat.image} style={styles.categoryImg} resizeMode="contain" />
+                                    </View>
+                                    <Text style={[styles.categoryLabel, isActive && { color: Colors.primary, fontWeight: '700' }]}>{cat.label}</Text>
+                                </TouchableOpacity>
+                            );
+                        })}
                     </ScrollView>
                 </View>
+
+                {/* --- PRODUCTS HORIZONTAL LIST FOR CATEGORY --- */}
+                {selectedCategory && filteredProducts.length > 0 && (
+                    <View style={styles.section}>
+                        <View style={styles.sectionHeader}>
+                            <Text style={styles.sectionTitle}>Productos en {selectedCategory}</Text>
+                        </View>
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.productsRow}
+                        >
+                            {filteredProducts.map((p, index) => (
+                                <TouchableOpacity 
+                                    key={index}
+                                    style={styles.productItemCard}
+                                    onPress={() => router.push(`/product/${p.id}` as any)}
+                                    activeOpacity={0.85}
+                                >
+                                    <Image source={{ uri: p.image }} style={styles.productImg} />
+                                    <View style={styles.productInfo}>
+                                        <Text style={styles.productName} numberOfLines={1}>{p.name}</Text>
+                                        <Text style={styles.productPrice}>${p.price?.toFixed(2)}</Text>
+                                    </View>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    </View>
+                )}
 
                 {/* Restaurants */}
                 <View style={styles.section}>
@@ -161,8 +256,8 @@ export default function HomePage() {
                             <ActivityIndicator size="large" color={Colors.primary} />
                         </View>
                     ) : (
-                        restaurants.length > 0 ? (
-                            restaurants.map((r, i) => (
+                        filteredRestaurants.length > 0 ? (
+                            filteredRestaurants.map((r, i) => (
                                 <TouchableOpacity
                                     key={r.id || i}
                                     style={styles.card}
@@ -177,6 +272,20 @@ export default function HomePage() {
                                                 <Text style={styles.promotedText}>Promoted</Text>
                                             </View>
                                         )}
+                                        
+                                        {/* Heart/Like Button */}
+                                        <TouchableOpacity
+                                            style={styles.likeBtn}
+                                            onPress={() => toggleFavorite(r.id)}
+                                            activeOpacity={0.8}
+                                        >
+                                            <FontAwesome 
+                                                name={favorites.includes(r.id) ? "heart" : "heart-o"} 
+                                                size={18} 
+                                                color={favorites.includes(r.id) ? Colors.primary : Colors.white} 
+                                            />
+                                        </TouchableOpacity>
+
                                         <View style={styles.timeBadge}>
                                             <Text style={styles.timeDot}>●</Text>
                                             <Text style={styles.timeText}>{r.deliveryTime || '20-30 min'}</Text>
@@ -374,6 +483,18 @@ const styles = StyleSheet.create({
     },
     cardImageWrap: { position: 'relative', height: 180 },
     cardImage: { width: '100%', height: '100%' },
+    likeBtn: {
+        position: 'absolute',
+        top: 12,
+        right: 12,
+        backgroundColor: 'rgba(0,0,0,0.3)', 
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 10,
+    },
     promotedBadge: {
         position: 'absolute',
         top: 12,
@@ -442,5 +563,19 @@ const styles = StyleSheet.create({
     cartCountText: { fontSize: 13, fontWeight: '700', color: Colors.white },
     cartLabel: { fontSize: 15, fontWeight: '700', color: Colors.white },
     cartTotal: { fontSize: 15, fontWeight: '700', color: Colors.white },
+    productsRow: { gap: 12, paddingVertical: 4 },
+    productItemCard: {
+        width: 140,
+        backgroundColor: Colors.white,
+        borderRadius: 12,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: Colors.gray100,
+        marginRight: 4,
+    },
+    productImg: { width: '100%', height: 100 },
+    productInfo: { padding: 8 },
+    productName: { fontSize: 13, fontWeight: '700', color: Colors.slate900 },
+    productPrice: { fontSize: 13, color: Colors.primary, fontWeight: '700', marginTop: 2 },
     categoryImg: { width: 48, height: 48 },
 });

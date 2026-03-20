@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface AddressItem {
   id?: string;
@@ -28,35 +30,43 @@ interface AddressState {
   getCurrentAddressName: () => string;
 }
 
-export const useAddressStore = create<AddressState>((set, get) => ({
-  addresses: [],
-  currentAddress: null,
-  loading: false,
+export const useAddressStore = create<AddressState>()(
+  persist(
+    (set, get) => ({
+      addresses: [],
+      currentAddress: null,
+      loading: false,
 
-  setAddresses: (addresses) => set({ addresses }),
-  
-  setCurrentAddress: (address) => set({ currentAddress: address }),
+      setAddresses: (addresses) => set({ addresses }),
+      
+      setCurrentAddress: (address) => set({ currentAddress: address }),
 
-  addAddressToStore: (address) => set((state) => ({
-    addresses: [address, ...state.addresses]
-  })),
+      addAddressToStore: (address) => set((state) => ({
+        addresses: [address, ...state.addresses]
+      })),
 
-  updateAddressInStore: (address) => set((state) => ({
-    addresses: state.addresses.map((a) => a.id === address.id ? address : a),
-    currentAddress: state.currentAddress?.id === address.id ? address : state.currentAddress
-  })),
+      updateAddressInStore: (address) => set((state) => ({
+        addresses: state.addresses.map((a) => a.id === address.id ? address : a),
+        currentAddress: state.currentAddress?.id === address.id ? address : state.currentAddress
+      })),
 
-  removeAddressFromStore: (addressId) => set((state) => ({
-    addresses: state.addresses.filter((a) => a.id !== addressId)
-  })),
+      removeAddressFromStore: (addressId) => set((state) => ({
+        addresses: state.addresses.filter((a) => a.id !== addressId)
+      })),
 
-  setLoading: (loading) => set({ loading }),
+      setLoading: (loading) => set({ loading }),
 
-  getCurrentAddressName: () => {
-    const current = get().currentAddress;
-    if (current) {
-        return current.description || current.title;
+      getCurrentAddressName: () => {
+        const current = get().currentAddress;
+        if (current) {
+            return current.description || current.title;
+        }
+        return "Seleccionar dirección";
+      }
+    }),
+    {
+      name: 'speedygo-address',
+      storage: createJSONStorage(() => AsyncStorage),
     }
-    return "Seleccionar dirección";
-  }
-}));
+  )
+);

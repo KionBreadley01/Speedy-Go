@@ -4,7 +4,8 @@ import { Tabs } from 'expo-router';
 import { onAuthStateChanged } from 'firebase/auth';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { auth, db } from '../../Lib/firebase';
 
 type TabIconProps = {
@@ -26,6 +27,7 @@ const TabIcon = ({ icon, focused, label, badge }: TabIconProps) => (
 
 export default function TabLayout() {
   const [hasActiveOrder, setHasActiveOrder] = useState(false);
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     let unsubscribeOrders: () => void;
@@ -64,7 +66,11 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: {
+          ...styles.tabBar,
+          height: Platform.OS === 'ios' ? 49 + insets.bottom : 62 + insets.bottom,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 10,
+        },
         tabBarShowLabel: false,
       }}
     >
@@ -108,8 +114,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffffff', // Un tono de blanco diferente (off-white perlado) para destacar
     borderTopColor: '#000000ff',
     borderTopWidth: 1,
-    height: 58, // Más grande
-    paddingBottom: 10,
     paddingTop: 10,
     paddingHorizontal: 16,
     shadowColor: '#000',

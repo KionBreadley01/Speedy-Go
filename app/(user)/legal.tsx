@@ -1,14 +1,11 @@
 import { Colors } from '@/constants/colors';
 import { Feather } from '@expo/vector-icons';
-import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-export default function AboutScreen() {
+export default function LegalScreen() {
     const router = useRouter();
-    // Use expo-constants to get the app version, fallback to '1.0.0'
-    const appVersion = Constants.expoConfig?.version || '1.0.0';
 
     const renderLink = (title: string, onPress?: () => void) => (
         <TouchableOpacity style={styles.linkItem} onPress={onPress} activeOpacity={0.7}>
@@ -28,29 +25,17 @@ export default function AboutScreen() {
                 >
                     <Feather name="chevron-left" size={26} color={Colors.slate900} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Acerca de Speedy Go</Text>
+                <Text style={styles.headerTitle}>Legal</Text>
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent} bounces={false}>
-                {/* App Info Header */}
-                <View style={styles.appInfoSection}>
-                    <View style={styles.logoPlaceholder}>
-                        <Image
-                            source={require('../../assets/images/android-icon-foreground.png')}
-                            style={styles.logoImage}
-                            resizeMode="contain"
-                        />
-                    </View>
-                    <Text style={styles.appName}>Speedy Go</Text>
-                    <Text style={styles.appVersion}>Versión {appVersion}</Text>
-                </View>
-
-
-
-                {/* Footer / Copyright */}
-                <View style={styles.footer}>
-                    <Text style={styles.footerText}>© 2026 Speedy-Go Inc.</Text>
-                    <Text style={styles.footerText}>Todos los derechos reservados.</Text>
+                {/* Links Section */}
+                <View style={styles.linksSection}>
+                    {renderLink('Términos y Condiciones')}
+                    <View style={styles.divider} />
+                    {renderLink('Aviso de Privacidad')}
+                    <View style={styles.divider} />
+                    {renderLink('Licencias de código abierto')}
                 </View>
             </ScrollView>
         </SafeAreaView>
@@ -84,38 +69,11 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         paddingBottom: 40,
-    },
-    appInfoSection: {
-        alignItems: 'center',
-        paddingVertical: 40,
-        backgroundColor: Colors.white,
-        marginBottom: 12,
-    },
-    logoPlaceholder: {
-        width: 96,
-        height: 96,
-        borderRadius: 24,
-        backgroundColor: `${Colors.primary}18`,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 16,
-    },
-    logoImage: {
-        width: 64,
-        height: 64,
-    },
-    appName: {
-        fontSize: 24,
-        fontWeight: '800',
-        color: Colors.slate900,
-        marginBottom: 4,
-    },
-    appVersion: {
-        fontSize: 15,
-        color: Colors.slate500,
+        paddingTop: 12,
     },
     linksSection: {
         backgroundColor: Colors.white,
+        marginTop: 4,
     },
     linkItem: {
         flexDirection: 'row',
@@ -133,14 +91,5 @@ const styles = StyleSheet.create({
         height: 1,
         backgroundColor: Colors.gray100,
         marginLeft: 20,
-    },
-    footer: {
-        marginTop: 40,
-        alignItems: 'center',
-    },
-    footerText: {
-        fontSize: 13,
-        color: Colors.gray400,
-        lineHeight: 20,
     },
 });
