@@ -89,6 +89,77 @@ export const userService = {
     }
   },
 
+  // --- FAVORITES (ME GUSTAS) ---
+  // Get favorite restaurant IDs
+  async getFavorites(userId: string): Promise<string[]> {
+    try {
+      const colRef = collection(db, USERS_COLLECTION, userId, 'favorites');
+      const querySnap = await getDocs(colRef);
+      return querySnap.docs.map(doc => doc.id);
+    } catch (error) {
+      console.error("Error fetching favorites:", error);
+      throw error;
+    }
+  },
+
+  // Add a favorite
+  async addFavorite(userId: string, itemId: string): Promise<void> {
+    try {
+      // Create with specific ID so that we can fetch and delete it easily
+      const docRef = doc(db, USERS_COLLECTION, userId, 'favorites', itemId);
+      await setDoc(docRef, { timestamp: new Date() });
+    } catch (error) {
+      console.error("Error adding favorite:", error);
+      throw error;
+    }
+  },
+
+  // Delete a favorite
+  async deleteFavorite(userId: string, itemId: string): Promise<void> {
+    try {
+      const docRef = doc(db, USERS_COLLECTION, userId, 'favorites', itemId);
+      await deleteDoc(docRef);
+    } catch (error) {
+      console.error("Error deleting favorite:", error);
+      throw error;
+    }
+  },
+
+  // --- PRODUCT FAVORITES (ME GUSTAS DE PRODUCTOS) ---
+  // Get favorite product IDs
+  async getProductFavorites(userId: string): Promise<string[]> {
+    try {
+      const colRef = collection(db, USERS_COLLECTION, userId, 'favoriteProducts');
+      const querySnap = await getDocs(colRef);
+      return querySnap.docs.map(doc => doc.id);
+    } catch (error) {
+      console.error("Error fetching product favorites:", error);
+      throw error;
+    }
+  },
+
+  // Add a product favorite
+  async addProductFavorite(userId: string, itemId: string): Promise<void> {
+    try {
+      const docRef = doc(db, USERS_COLLECTION, userId, 'favoriteProducts', itemId);
+      await setDoc(docRef, { timestamp: new Date() });
+    } catch (error) {
+      console.error("Error adding product favorite:", error);
+      throw error;
+    }
+  },
+
+  // Delete a product favorite
+  async deleteProductFavorite(userId: string, itemId: string): Promise<void> {
+    try {
+      const docRef = doc(db, USERS_COLLECTION, userId, 'favoriteProducts', itemId);
+      await deleteDoc(docRef);
+    } catch (error) {
+      console.error("Error deleting product favorite:", error);
+      throw error;
+    }
+  },
+
   // Delete user account from Firestore and Firebase Auth
   async deleteUserAccount(user: User): Promise<void> {
     try {

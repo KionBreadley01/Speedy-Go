@@ -2,6 +2,7 @@ import { Colors } from '@/constants/colors';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useState, useEffect } from 'react';
 import {
+    ActivityIndicator,
     Image,
     ScrollView,
     StyleSheet,
@@ -26,12 +27,34 @@ export default function SearchScreen() {
     const router = useRouter();
     const params = useLocalSearchParams<{ category?: string }>();
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+    const [restaurants, setRestaurants] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         if (params.category) {
             setSelectedCategory(params.category);
         }
     }, [params.category]);
+
+    useEffect(() => {
+        const load = async () => {
+            const { restaurantService } = await import('../../Lib/services/restaurantService');
+            try {
+                const data = await restaurantService.getRestaurants();
+                setRestaurants(data);
+            } catch (e) {
+                console.error("Error loading search results:", e);
+            } finally {
+                setLoading(false);
+            }
+        };
+        load();
+    }, []);
+
+    const filteredRestaurants = restaurants.filter(r => {
+        if (!selectedCategory) return true;
+        return r.category.toLowerCase().includes(selectedCategory.toLowerCase()) || r.name.toLowerCase().includes(selectedCategory.toLowerCase());
+    });
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
@@ -80,7 +103,7 @@ export default function SearchScreen() {
                     contentContainerStyle={styles.categoriesRow}
                 >
                     {CATEGORIES.map((cat, i) => {
-                        const isSelected = selectedCategory === cat.label;
+                        const isSelected = selectedCategory?.toLowerCase() === cat.label.toLowerCase();
                         return (
                             <TouchableOpacity
                                 key={i}
@@ -105,61 +128,49 @@ export default function SearchScreen() {
             </View>
 
             {/* Results */}
-            <ScrollView
-                style={styles.scroll}
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}
-            >
-                <TouchableOpacity
-                    style={styles.card}
-                    onPress={() => router.push('/restaurant/1' as any)}
-                    activeOpacity={0.88}
+            {loading ? (
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <ActivityIndicator size="large" color={Colors.primary} />
+                </View>
+            ) : (
+                <ScrollView
+                    style={styles.scroll}
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
                 >
-                    <View style={styles.cardImageWrap}>
-                        <Image
-                            source={{
-                                uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB6Je7dOSbCBanw7wRfhe4SSZ8bZmJZIWYD0zU7PXeixUBHI3iZ0PSnqzahzgjSZNEwGgkn4vl9ub6ELl7rGEO6Ubw1LodHdxSixXyjduJtq5M1adiLD5rqUIUZEl_4w7pJynckrr-GhAdLnc96HmlSfvY2Z42dhz-jq2OKbD_EWsYwjvzR1_1dqruHM5FUnUaHaTPLfFDCqlyz0NDHArS5teyeg_mrw_S6DQssj1R7niPzhQfXA0ulW-Pd802OeNAUeWiOzeSau6-X',
-                            }}
-                            style={styles.cardImage}
-                        />
-                    </View>
-                    <View style={styles.cardInfo}>
-                        <Text style={styles.cardName}>Burger King</Text>
-                        <View style={styles.cardMeta}>
-                            <Text style={styles.cardMetaText}>American</Text>
-                            <View style={styles.metaDot} />
-                            <Text style={styles.cardMetaText}>Fast Food</Text>
-                            <View style={styles.metaDot} />
-                            <Text style={styles.cardMetaText}>15-20 min</Text>
+                    {filteredRestaurants.length > 0 ? (
+                        filteredRestaurants.map((r) => (
+                            <TouchableOpacity
+                                key={r.id}
+                                style={styles.card}
+                                onPress={() => router.push(`/restaurant/${r.id}` as any)}
+                                activeOpacity={0.88}
+                            >
+                                <View style={styles.cardImageWrap}>
+                                    <Image
+                                        source={{ uri: r.image }}
+                                        style={styles.cardImage}
+                                    />
+                                </View>
+                                <View style={styles.cardInfo}>
+                                    <Text style={styles.cardName}>{r.name}</Text>
+                                    <View style={styles.cardMeta}>
+                                        <Text style={styles.cardMetaText}>{r.category.split('•')[0].trim()}</Text>
+                                        <View style={styles.metaDot} />
+                                        <Text style={styles.cardMetaText}>{r.deliveryTime}</Text>
+                                        <View style={styles.metaDot} />
+                                        <Text style={styles.cardMetaText}>★ {r.rating}</Text>
+                                    </View>
+                                </View>
+                            </TouchableOpacity>
+                        ))
+                    ) : (
+                        <View style={{ padding: 40, alignItems: 'center' }}>
+                            <Text style={{ fontSize: 16, color: Colors.slate500 }}>No se encontraron restaurantes</Text>
                         </View>
-                    </View>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={styles.card}
-                    onPress={() => router.push('/restaurant/1' as any)}
-                    activeOpacity={0.88}
-                >
-                    <View style={styles.cardImageWrap}>
-                        <Image
-                            source={{
-                                uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCIhomPRZzyN13C9Nr297Lbuxd42ChLmhF_hWFLVC5Gh_j94JkWjLKRh7wCLFW2-2XaZeKfzBk0HdMN98GfJH8q99wjQV9-II5euaFjXSkPtDZTKVW0drdFYdeeOE21Z-44Frsf_yTYUvBY3hGdz8bRrH29ITx5mEch_eXuQnWE6871mwDBE6PO0FR_w8bHnp9-7TqcAslumIlA_5cmkr2s5vojnqaL1kNG5GgHFViLFPNPTiwmA0aayZi4FcMdyBEkgD6sErFSPf4T',
-                            }}
-                            style={styles.cardImage}
-                        />
-                    </View>
-                    <View style={styles.cardInfo}>
-                        <Text style={styles.cardName}>The Burger Lab</Text>
-                        <View style={styles.cardMeta}>
-                            <Text style={styles.cardMetaText}>Burgers</Text>
-                            <View style={styles.metaDot} />
-                            <Text style={styles.cardMetaText}>Gourmet</Text>
-                            <View style={styles.metaDot} />
-                            <Text style={styles.cardMetaText}>20-30 min</Text>
-                        </View>
-                    </View>
-                </TouchableOpacity>
-            </ScrollView>
+                    )}
+                </ScrollView>
+            )}
         </SafeAreaView>
     );
 }

@@ -20,11 +20,9 @@ export default function ProductDetails() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const [qty, setQty] = useState(1);
     
-    const toggleFavorite = useFavoriteStore((state) => state.toggleFavorite);
-    const isFavoriteLocal = useFavoriteStore((state) => state.isFavorite(id || ''));
-    
     const [product, setProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState(true);
+    const [isFavorite, setIsFavorite] = useState(false);
     
     const addItemToCart = useCartStore((state) => state.addItem);
 
@@ -41,8 +39,50 @@ export default function ProductDetails() {
             }
         };
 
+        const loadFavorite = async () => {
+            if (!id) return;
+            const { auth } = await import('../../../Lib/firebase');
+            const { userService } = await import('../../../Lib/services/userService');
+            const user = auth.currentUser;
+            if (user) {
+                try {
+                    const favs = await userService.getProductFavorites(user.uid);
+                    setIsFavorite(favs.includes(id));
+                } catch (error) {
+                    console.error("Error loading favorite state:", error);
+                }
+            }
+        };
+
         loadProduct();
+        loadFavorite();
     }, [id]);
+
+    const handleToggleFavorite = async () => {
+        if (!id) return;
+        const { auth } = await import('../../../Lib/firebase');
+        const { userService } = await import('../../../Lib/services/userService');
+        const user = auth.currentUser;
+
+        if (!user) {
+            alert("Inicia sesión para guardar favoritos");
+            return;
+        }
+
+        const nextFav = !isFavorite;
+        setIsFavorite(nextFav); // optimistic UI
+
+        try {
+            if (nextFav) {
+                await userService.addProductFavorite(user.uid, id);
+            } else {
+                await userService.deleteProductFavorite(user.uid, id);
+            }
+        } catch (error) {
+            console.error("Error toggling favorite on DB:", error);
+            setIsFavorite(!nextFav); // rollback
+        }
+    };
 
     const handleAddToCart = () => {
         if (!product) return;
@@ -91,14 +131,12 @@ export default function ProductDetails() {
                     <TouchableOpacity 
                         style={styles.heroBtn} 
                         activeOpacity={0.8}
-                        onPress={() => {
-                            if (product) toggleFavorite(product);
-                        }}
+                        onPress={handleToggleFavorite}
                     >
                         <Ionicons 
-                            name={isFavoriteLocal ? "heart" : "heart-outline"} 
+                            name={isFavorite ? "heart" : "heart-outline"} 
                             size={22} 
-                            color={isFavoriteLocal ? Colors.primary : Colors.white} 
+                            color={isFavorite ? Colors.primary : Colors.white} 
                         />
                     </TouchableOpacity>
                 </View>

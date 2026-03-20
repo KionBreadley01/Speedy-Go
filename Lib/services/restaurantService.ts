@@ -33,6 +33,22 @@ export const restaurantService = {
       throw error;
     }
   },
+  // Get all products
+  async getProducts(): Promise<Product[]> {
+    try {
+      const q = query(collection(db, PRODUCTS_COLLECTION));
+      const querySnapshot = await getDocs(q);
+      
+      const products: Product[] = [];
+      querySnapshot.forEach((doc) => {
+        products.push({ id: doc.id, ...doc.data() } as Product);
+      });
+      return products;
+    } catch (error) {
+      console.error("Error fetching all products:", error);
+      throw error;
+    }
+  },
 
   // Get a single restaurant by ID
   async getRestaurantById(id: string): Promise<Restaurant | null> {

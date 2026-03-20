@@ -1,3 +1,4 @@
+import { CustomAlert } from '@/components/CustomAlert';
 import { Colors } from '@/constants/colors';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -12,7 +13,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { auth } from '../../Lib/firebase';
-import { CustomAlert } from '@/components/CustomAlert';
 
 export default function SettingsScreen() {
     const router = useRouter();
@@ -78,14 +78,14 @@ export default function SettingsScreen() {
 
                     {/* Block 2 */}
                     <View style={styles.block}>
-                        {renderListItem('Legal')}
+                        {renderListItem('Legal', undefined, () => router.push('/legal'))}
                         <View style={styles.divider} />
-                        {renderListItem('Privacidad')}
+                        {renderListItem('Privacidad', undefined, () => router.push('/privacy'))}
                     </View>
 
                     {/* Block 3 */}
                     <View style={styles.block}>
-                        {renderListItem('Acerca de Speedy-Go', undefined, () => router.push('/about'))}
+                        {renderListItem('Acerca de Speedy Go', undefined, () => router.push('/about'))}
                         <View style={styles.divider} />
                         {renderListItem('Cerrar sesión', undefined, handleSignOut)}
                     </View>
@@ -127,6 +127,8 @@ const styles = StyleSheet.create({
         backgroundColor: '#F3F4F6', // Lighter gray to mimic the section spacing
     },
     header: {
+        flexDirection: 'row',
+        alignItems: 'center',
         paddingHorizontal: 16,
         paddingBottom: 16,
         paddingTop: 8,
