@@ -16,20 +16,14 @@ import { restaurantService, Restaurant } from '../../Lib/services/restaurantServ
 import { useCartStore } from '../../store/cartStore';
 import { useAddressStore } from '../../store/addressStore';
 
-const CATEGORIES = [
-    { label: 'Pizza',        image: require('../../assets/categories/pizza.png') },
-    { label: 'Hamburguesas', image: require('../../assets/categories/burger.png') },
-    { label: 'Tacos',        image: require('../../assets/categories/tacos.png') },
-    { label: 'Sushi',        image: require('../../assets/categories/sushi.png') },
-    { label: 'Saludable',    image: require('../../assets/categories/healthy.png') },
-    { label: 'Súper',        image: require('../../assets/categories/super.png') },
-];
+// NO HARDCODED CATEGORIES
 
 export default function HomePage() {
     const router = useRouter();
     const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+    const [categories, setCategories] = useState<any[]>([]);
     const [products, setProducts] = useState<any[]>([]); // general products
 
     const cartTotalItems = useCartStore((state) => state.getTotalItems());
@@ -112,8 +106,18 @@ export default function HomePage() {
             }
         };
 
+        const fetchCategories = async () => {
+            try {
+                const data = await restaurantService.getCategories();
+                setCategories(data);
+            } catch (error) {
+                console.error("Error fetching categories:", error);
+            }
+        };
+
         fetchRestaurants();
         fetchProducts();
+        fetchCategories();
     }, []);
 
     // Filtered data logic
@@ -192,17 +196,17 @@ export default function HomePage() {
                         showsHorizontalScrollIndicator={false}
                         contentContainerStyle={styles.categoriesRow}
                     >
-                        {CATEGORIES.map((cat, i) => {
+                        {categories.map((cat, i) => {
                             const isActive = selectedCategory?.toLowerCase() === cat.label.toLowerCase();
                             return (
                                 <TouchableOpacity
-                                    key={i}
+                                    key={cat.id || i}
                                     style={styles.categoryItem}
                                     onPress={() => setSelectedCategory(isActive ? null : cat.label)}
                                     activeOpacity={0.7}
                                 >
                                     <View style={[styles.categoryCircle, isActive && { borderColor: Colors.primary, borderWidth: 2 }]}>
-                                        <Image source={cat.image} style={styles.categoryImg} resizeMode="contain" />
+                                        <Image source={{ uri: cat.image }} style={styles.categoryImg} resizeMode="contain" />
                                     </View>
                                     <Text style={[styles.categoryLabel, isActive && { color: Colors.primary, fontWeight: '700' }]}>{cat.label}</Text>
                                 </TouchableOpacity>
