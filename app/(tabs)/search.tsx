@@ -34,7 +34,8 @@ export default function SearchScreen() {
         const load = async () => {
             const { restaurantService } = await import('../../Lib/services/restaurantService');
             try {
-                const data = await restaurantService.getRestaurants();
+                // Only show active restaurants
+                const data = await restaurantService.getActiveRestaurants();
                 setRestaurants(data);
                 const cats = await restaurantService.getCategories();
                 setCategories(cats);
