@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
+import { useEffect } from 'react';
 
 const RECENT_SEARCHES = ['Hamburguesas', 'Sushi', 'Pizza'];
 
@@ -24,19 +25,26 @@ const TRENDING = [
     { label: 'Alitas 🍗', hot: true },
 ];
 
-const EXPLORE = [
-    { label: 'Tacos',         image: require('../assets/categories/tacos.png') },
-    { label: 'Pizza',         image: require('../assets/categories/pizza.png') },
-    { label: 'Hamburguesas',  image: require('../assets/categories/burger.png') },
-    { label: 'Sushi',         image: require('../assets/categories/sushi.png') },
-    { label: 'Saludable',     image: require('../assets/categories/healthy.png') },
-    { label: 'S\u00faper',         image: require('../assets/categories/super.png') },
-];
+// NO HARDCODED EXPLORE
 
 export default function SearchInputScreen() {
     const router = useRouter();
     const [query, setQuery] = useState('');
     const inputRef = useRef<TextInput>(null);
+    const [exploreCategories, setExploreCategories] = useState<any[]>([]);
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            const { restaurantService } = await import('../Lib/services/restaurantService');
+            try {
+                const cats = await restaurantService.getCategories();
+                setExploreCategories(cats);
+            } catch (e) {
+                console.error("Error loading categories:", e);
+            }
+        };
+        fetchCategories();
+    }, []);
 
     const handleSearch = (term: string) => {
         if (term.trim()) {
@@ -142,14 +150,14 @@ export default function SearchInputScreen() {
                         <Text style={styles.sectionTitle}>Explorar</Text>
                     </View>
                     <View style={styles.exploreGrid}>
-                        {EXPLORE.map((cat, i) => (
+                        {exploreCategories.map((cat, i) => (
                             <TouchableOpacity
-                                key={i}
+                                key={cat.id || i}
                                 style={styles.exploreCard}
                                 activeOpacity={0.8}
                                 onPress={() => handleSearch(cat.label)}
                             >
-                                <Image source={cat.image} style={styles.exploreImage} resizeMode="contain" />
+                                <Image source={{ uri: cat.image }} style={styles.exploreImage} resizeMode="contain" />
                                 <Text style={styles.exploreLabel} numberOfLines={1}>
                                     {cat.label}
                                 </Text>

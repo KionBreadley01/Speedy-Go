@@ -101,5 +101,28 @@ export const restaurantService = {
       console.error(`Error fetching product ${id}:`, error);
       throw error;
     }
+  },
+
+  // Get all categories dynamically
+  async getCategories() {
+    try {
+      const q = query(collection(db, "categories"));
+      const querySnapshot = await getDocs(q);
+      
+      const categories: { id: string; label: string; image: string; order: number }[] = [];
+      querySnapshot.forEach((doc) => {
+        const d = doc.data();
+        categories.push({ 
+          id: doc.id, 
+          label: d.name, 
+          image: d.icon || d.image || 'https://via.placeholder.com/150',
+          order: d.order || 99
+        });
+      });
+      return categories.sort((a,b) => a.order - b.order);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+      throw error;
+    }
   }
 };

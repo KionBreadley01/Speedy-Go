@@ -14,20 +14,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 
-const CATEGORIES = [
-    { label: 'Pizza', image: require('../../assets/categories/pizza.png') },
-    { label: 'Hamburguesas', image: require('../../assets/categories/burger.png') },
-    { label: 'Tacos', image: require('../../assets/categories/tacos.png') },
-    { label: 'Sushi', image: require('../../assets/categories/sushi.png') },
-    { label: 'Saludable', image: require('../../assets/categories/healthy.png') },
-    { label: 'Súper', image: require('../../assets/categories/super.png') },
-];
+// NO HARDCODED CATEGORIES
 
 export default function SearchScreen() {
     const router = useRouter();
     const params = useLocalSearchParams<{ category?: string }>();
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [restaurants, setRestaurants] = useState<any[]>([]);
+    const [categories, setCategories] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -42,6 +36,8 @@ export default function SearchScreen() {
             try {
                 const data = await restaurantService.getRestaurants();
                 setRestaurants(data);
+                const cats = await restaurantService.getCategories();
+                setCategories(cats);
             } catch (e) {
                 console.error("Error loading search results:", e);
             } finally {
@@ -102,11 +98,11 @@ export default function SearchScreen() {
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.categoriesRow}
                 >
-                    {CATEGORIES.map((cat, i) => {
+                    {categories.map((cat, i) => {
                         const isSelected = selectedCategory?.toLowerCase() === cat.label.toLowerCase();
                         return (
                             <TouchableOpacity
-                                key={i}
+                                key={cat.id || i}
                                 style={[
                                     styles.categoryCard,
                                     isSelected && styles.categoryCardActive,
@@ -114,7 +110,7 @@ export default function SearchScreen() {
                                 activeOpacity={0.8}
                                 onPress={() => setSelectedCategory(isSelected ? null : cat.label)}
                             >
-                                <Image source={cat.image} style={styles.categoryImage} resizeMode="contain" />
+                                <Image source={{ uri: cat.image }} style={styles.categoryImage} resizeMode="contain" />
                                 <Text style={[
                                     styles.categoryLabel,
                                     isSelected && styles.categoryLabelActive,
