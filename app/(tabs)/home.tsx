@@ -4,11 +4,13 @@ import { useState, useEffect } from 'react';
 import {
     ActivityIndicator,
     Image,
+    Modal,
     ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
-    View
+    View,
+    FlatList
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, FontAwesome } from '@expo/vector-icons';
@@ -25,6 +27,8 @@ export default function HomePage() {
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [categories, setCategories] = useState<any[]>([]);
     const [products, setProducts] = useState<any[]>([]); // general products
+    const [visibleCount, setVisibleCount] = useState(5); // "Mostrar más" control
+    const [showAllCategories, setShowAllCategories] = useState(false);
 
     const cartTotalItems = useCartStore((state) => state.getTotalItems());
     const cartTotalPrice = useCartStore((state) => state.getTotalPrice());
@@ -88,7 +92,8 @@ export default function HomePage() {
     useEffect(() => {
         const fetchRestaurants = async () => {
             try {
-                const data = await restaurantService.getRestaurants();
+                // Only show active restaurants in the app
+                const data = await restaurantService.getActiveRestaurants();
                 setRestaurants(data);
             } catch (error) {
                 console.error("Failed to fetch restaurants:", error);
@@ -122,13 +127,31 @@ export default function HomePage() {
 
     // Filtered data logic
     const filteredRestaurants = selectedCategory 
-        ? restaurants.filter(r => r.category.toLowerCase().includes(selectedCategory.toLowerCase()))
+        ? restaurants.filter(r => {
+            // 1. Check restaurant's primary category
+            if (r.category?.toLowerCase().includes(selectedCategory.toLowerCase())) return true;
+            // 2. Check if restaurant has any products in this category
+            const hasMatchingProduct = products.some(p => 
+                p.restaurantId === r.id && 
+                ((p as any).category?.toLowerCase().includes(selectedCategory.toLowerCase()) || 
+                 p.name.toLowerCase().includes(selectedCategory.toLowerCase()))
+            );
+            return hasMatchingProduct;
+        })
         : restaurants;
+
+    // Reset visible count when category changes
+    const visibleRestaurants = filteredRestaurants.slice(0, visibleCount);
+    const hasMore = filteredRestaurants.length > visibleCount;
 
     const filteredProducts = selectedCategory
         ? products.filter(p => {
              const rest = restaurants.find(r => r.id === p.restaurantId);
+             // 1. Check if restaurant category matches
              if (rest?.category.toLowerCase().includes(selectedCategory.toLowerCase())) return true;
+             // 2. Check if product category matches
+             if ((p as any).category?.toLowerCase().includes(selectedCategory.toLowerCase())) return true;
+             // 3. Check if product name matches
              if (p.name.toLowerCase().includes(selectedCategory.toLowerCase())) return true;
              return false;
           })
@@ -186,10 +209,12 @@ export default function HomePage() {
                 showsVerticalScrollIndicator={false}
             >
                 {/* Categories */}
-                <View style={styles.section}>
-                    <View style={styles.sectionHeader}>
+                <View style={[styles.section, { paddingHorizontal: 0 }]}>
+                    <View style={[styles.sectionHeader, { paddingHorizontal: 16 }]}>
                         <Text style={styles.sectionTitle}>Categorías</Text>
-                        <Text style={styles.seeAll}>Ver todo</Text>
+                        <TouchableOpacity onPress={() => setShowAllCategories(true)}>
+                            <Text style={styles.seeAll}>Ver todo</Text>
+                        </TouchableOpacity>
                     </View>
                     <ScrollView
                         horizontal
@@ -205,10 +230,16 @@ export default function HomePage() {
                                     onPress={() => setSelectedCategory(isActive ? null : cat.label)}
                                     activeOpacity={0.7}
                                 >
-                                    <View style={[styles.categoryCircle, isActive && { borderColor: Colors.primary, borderWidth: 2 }]}>
+                                    <View style={[
+                                        styles.categoryCircle, 
+                                        isActive && styles.categoryActive
+                                    ]}>
                                         <Image source={{ uri: cat.image }} style={styles.categoryImg} resizeMode="contain" />
                                     </View>
-                                    <Text style={[styles.categoryLabel, isActive && { color: Colors.primary, fontWeight: '700' }]}>{cat.label}</Text>
+                                    <Text style={[
+                                        styles.categoryLabel, 
+                                        isActive && styles.categoryLabelActive
+                                    ]}>{cat.label}</Text>
                                 </TouchableOpacity>
                             );
                         })}
@@ -261,54 +292,68 @@ export default function HomePage() {
                         </View>
                     ) : (
                         filteredRestaurants.length > 0 ? (
-                            filteredRestaurants.map((r, i) => (
-                                <TouchableOpacity
-                                    key={r.id || i}
-                                    style={styles.card}
-                                    onPress={() => router.push(`/restaurant/${r.id}` as any)}
-                                    activeOpacity={0.9}
-                                >
-                                    <View style={styles.cardImageWrap}>
-                                        <Image source={{ uri: r.image }} style={styles.cardImage} />
-                                        {/* Optional promoted flag */}
-                                        {(r as any).promoted && (
-                                            <View style={styles.promotedBadge}>
-                                                <Text style={styles.promotedText}>Promoted</Text>
-                                            </View>
-                                        )}
-                                        
-                                        {/* Heart/Like Button */}
-                                        <TouchableOpacity
-                                            style={styles.likeBtn}
-                                            onPress={() => toggleFavorite(r.id)}
-                                            activeOpacity={0.8}
-                                        >
-                                            <FontAwesome 
-                                                name={favorites.includes(r.id) ? "heart" : "heart-o"} 
-                                                size={18} 
-                                                color={favorites.includes(r.id) ? Colors.primary : Colors.white} 
-                                            />
-                                        </TouchableOpacity>
+                            <>
+                                {visibleRestaurants.map((r, i) => (
+                                    <TouchableOpacity
+                                        key={r.id || i}
+                                        style={styles.card}
+                                        onPress={() => router.push(`/restaurant/${r.id}` as any)}
+                                        activeOpacity={0.9}
+                                    >
+                                        <View style={styles.cardImageWrap}>
+                                            <Image source={{ uri: r.image }} style={styles.cardImage} />
+                                            {/* Optional promoted flag */}
+                                            {(r as any).promoted && (
+                                                <View style={styles.promotedBadge}>
+                                                    <Text style={styles.promotedText}>Promoted</Text>
+                                                </View>
+                                            )}
+                                            
+                                            {/* Heart/Like Button */}
+                                            <TouchableOpacity
+                                                style={styles.likeBtn}
+                                                onPress={() => toggleFavorite(r.id)}
+                                                activeOpacity={0.8}
+                                            >
+                                                <FontAwesome 
+                                                    name={favorites.includes(r.id) ? "heart" : "heart-o"} 
+                                                    size={18} 
+                                                    color={favorites.includes(r.id) ? Colors.primary : Colors.white} 
+                                                />
+                                            </TouchableOpacity>
 
-                                        <View style={styles.timeBadge}>
-                                            <Text style={styles.timeDot}>●</Text>
-                                            <Text style={styles.timeText}>{r.deliveryTime || '20-30 min'}</Text>
-                                        </View>
-                                    </View>
-                                    <View style={styles.cardInfo}>
-                                        <View style={styles.cardInfoRow}>
-                                            <View style={{ flex: 1 }}>
-                                                <Text style={styles.cardName}>{r.name}</Text>
-                                                <Text style={styles.cardCuisine}>{r.category}</Text>
-                                            </View>
-                                            <View style={styles.ratingBadge}>
-                                                <Text style={styles.ratingText}>{r.rating || '4.5'}</Text>
-                                                <Text style={styles.ratingStar}>⭐</Text>
+                                            <View style={styles.timeBadge}>
+                                                <Text style={styles.timeDot}>●</Text>
+                                                <Text style={styles.timeText}>{r.deliveryTime || '20-30 min'}</Text>
                                             </View>
                                         </View>
-                                    </View>
-                                </TouchableOpacity>
-                            ))
+                                        <View style={styles.cardInfo}>
+                                            <View style={styles.cardInfoRow}>
+                                                <View style={{ flex: 1 }}>
+                                                    <Text style={styles.cardName}>{r.name}</Text>
+                                                    <Text style={styles.cardCuisine}>{r.category}</Text>
+                                                </View>
+                                                <View style={styles.ratingBadge}>
+                                                    <Text style={styles.ratingText}>{r.rating || '4.5'}</Text>
+                                                    <Text style={styles.ratingStar}>⭐</Text>
+                                                </View>
+                                            </View>
+                                        </View>
+                                    </TouchableOpacity>
+                                ))}
+
+                                {/* "Mostrar más" button */}
+                                {hasMore && (
+                                    <TouchableOpacity
+                                        style={styles.showMoreBtn}
+                                        onPress={() => setVisibleCount(c => c + 5)}
+                                        activeOpacity={0.8}
+                                    >
+                                        <Text style={styles.showMoreText}>Mostrar más restaurantes</Text>
+                                        <Feather name="chevron-down" size={16} color={Colors.primary} />
+                                    </TouchableOpacity>
+                                )}
+                            </>
                         ) : (
                             <View style={{ padding: 40, alignItems: 'center' }}>
                                 <Text style={{ color: Colors.gray400 }}>No hay restaurantes disponibles</Text>
@@ -334,6 +379,45 @@ export default function HomePage() {
                     </TouchableOpacity>
                 </View>
             )}
+            {/* Modal for All Categories */}
+            <Modal
+                visible={showAllCategories}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={() => setShowAllCategories(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Todas las Categorías</Text>
+                            <TouchableOpacity onPress={() => setShowAllCategories(false)} style={styles.closeBtn}>
+                                <Feather name="x" size={24} color={Colors.slate900} />
+                            </TouchableOpacity>
+                        </View>
+                        
+                        <FlatList
+                            data={categories}
+                            keyExtractor={(item, index) => item.id || index.toString()}
+                            numColumns={3}
+                            contentContainerStyle={styles.modalGrid}
+                            renderItem={({ item }) => (
+                                <TouchableOpacity
+                                    style={styles.modalCategoryItem}
+                                    onPress={() => {
+                                        setSelectedCategory(item.label);
+                                        setShowAllCategories(false);
+                                    }}
+                                >
+                                    <View style={styles.categoryCircle}>
+                                        <Image source={{ uri: item.image }} style={styles.categoryImg} resizeMode="contain" />
+                                    </View>
+                                    <Text style={styles.categoryLabel}>{item.label}</Text>
+                                </TouchableOpacity>
+                            )}
+                        />
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 }
@@ -451,26 +535,36 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: Colors.primary,
     },
-    categoriesRow: { gap: 16, paddingVertical: 4 },
-    categoryItem: { alignItems: 'center', gap: 6 },
+    categoriesRow: { gap: 16, paddingVertical: 10, paddingHorizontal: 16 },
+    categoryItem: { alignItems: 'center', gap: 8, width: 80 },
     categoryCircle: {
-        width: 68, // slightly larger
-        height: 68,
-        borderRadius: 18, // Squircle 
-        backgroundColor: '#FFF7F2', // soft peach tint matching other premium lists
+        width: 76,
+        height: 76,
+        borderRadius: 22,
+        backgroundColor: '#FFF7F2',
         alignItems: 'center',
         justifyContent: 'center',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.04,
-        shadowRadius: 8,
+        shadowOpacity: 0.05,
+        shadowRadius: 10,
         elevation: 2,
+        borderWidth: 2,
+        borderColor: 'transparent',
     },
-    categoryEmoji: { fontSize: 26 },
+    categoryActive: {
+        backgroundColor: '#FFEFE6',
+        borderColor: Colors.primary,
+    },
     categoryLabel: {
-        fontSize: 11,
+        fontSize: 12,
         fontWeight: '600',
         color: Colors.slate700,
+        textAlign: 'center',
+    },
+    categoryLabelActive: {
+        color: Colors.primary,
+        fontWeight: '800',
     },
     card: {
         backgroundColor: Colors.white,
@@ -582,4 +676,58 @@ const styles = StyleSheet.create({
     productName: { fontSize: 13, fontWeight: '700', color: Colors.slate900 },
     productPrice: { fontSize: 13, color: Colors.primary, fontWeight: '700', marginTop: 2 },
     categoryImg: { width: 48, height: 48 },
+    showMoreBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        paddingVertical: 14,
+        borderRadius: 14,
+        borderWidth: 1.5,
+        borderColor: `${Colors.primary}30`,
+        backgroundColor: `${Colors.primary}08`,
+        marginBottom: 8,
+    },
+    showMoreText: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: Colors.primary,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end',
+    },
+    modalContent: {
+        backgroundColor: Colors.white,
+        borderTopLeftRadius: 30,
+        borderTopRightRadius: 30,
+        height: '80%',
+        paddingTop: 20,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 24,
+        marginBottom: 20,
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: '800',
+        color: Colors.slate900,
+    },
+    closeBtn: {
+        padding: 4,
+    },
+    modalGrid: {
+        paddingHorizontal: 16,
+        paddingBottom: 40,
+    },
+    modalCategoryItem: {
+        flex: 1 / 3,
+        alignItems: 'center',
+        marginBottom: 24,
+        gap: 8,
+    },
 });
